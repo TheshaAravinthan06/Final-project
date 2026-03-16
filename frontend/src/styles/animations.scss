@@ -1,0 +1,36 @@
+.fade-up {
+  opacity: 0;
+  transform: translateY(26px);
+  animation: fadeUp 0.8s ease forwards;
+}
+
+.delay-1 {
+  animation-delay: 0.15s;
+}
+
+.delay-2 {
+  animation-delay: 0.3s;
+}
+
+.delay-3 {
+  animation-delay: 0.45s;
+}
+
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes aiPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(114, 138, 110, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 18px rgba(114, 138, 110, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(114, 138, 110, 0);
+  }
+}
