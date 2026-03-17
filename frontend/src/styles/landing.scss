@@ -862,11 +862,39 @@
 }
 
 .floating-ai-chatbox {
+  position: relative;
   width: 290px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   animation: fadeUp 0.5s ease;
+}
+
+.floating-ai-close-btn {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: $text-light;
+  color: $calm-green;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  transform: scale(0.9);
+}
+
+.floating-ai-chatbox:hover .floating-ai-close-btn {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
 }
 
 .floating-ai-message {
@@ -901,6 +929,26 @@
   }
 }
 
+.floating-ai-button-area {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-ai-ring-text {
+  position: absolute;
+  top: -34px;
+  right: -8px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #dffcff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+  transform: rotate(-18deg);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .floating-ai-btn {
   position: relative;
   width: 68px;
@@ -916,10 +964,16 @@
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
   animation: aiPulse 1.8s infinite;
   transition: transform 0.3s ease;
+  cursor: pointer;
 
   &:hover {
     transform: scale(1.08);
   }
+}
+
+.floating-ai-chat-icon {
+  font-size: 28px;
+  line-height: 1;
 }
 
 .floating-ai-notification {
