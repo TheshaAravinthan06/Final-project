@@ -3,33 +3,66 @@ import Place from "../models/place.models.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
+const parseArrayField = (value) => {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
 // ADMIN - CREATE PLACE
 export const createPlace = async (req, res) => {
   try {
-    const { imageUrl, caption, moodTags, isPublished } = req.body;
+    const {
+      placeName,
+      location,
+      caption,
+      moodTags,
+      activities,
+      bestTime,
+      weather,
+      vibe,
+      travelTip,
+      isPublished,
+    } = req.body;
 
-    if (!imageUrl || !caption) {
+    if (!req.file) {
       return res.status(400).json({
-        message: "Image URL and caption are required",
+        message: "Image is required",
       });
     }
 
-    let parsedMoodTags = [];
-
-    if (Array.isArray(moodTags)) {
-      parsedMoodTags = moodTags.map((tag) => tag.trim()).filter(Boolean);
-    } else if (typeof moodTags === "string" && moodTags.trim()) {
-      parsedMoodTags = moodTags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean);
+    if (!placeName || !location || !caption) {
+      return res.status(400).json({
+        message: "Place name, location, and caption are required",
+      });
     }
 
+    const imageUrl = `/uploads/places/${req.file.filename}`;
+
     const place = await Place.create({
-      imageUrl: imageUrl.trim(),
+      placeName: placeName.trim(),
+      location: location.trim(),
+      imageUrl,
       caption: caption.trim(),
-      moodTags: parsedMoodTags,
-      isPublished: typeof isPublished === "boolean" ? isPublished : true,
+      moodTags: parseArrayField(moodTags),
+      activities: parseArrayField(activities),
+      bestTime: bestTime ? bestTime.trim() : "",
+      weather: weather ? weather.trim() : "",
+      vibe: vibe ? vibe.trim() : "",
+      travelTip: travelTip ? travelTip.trim() : "",
+      isPublished:
+        String(isPublished).toLowerCase() === "false" ? false : true,
       createdBy: req.user._id,
     });
 
@@ -47,7 +80,7 @@ export const createPlace = async (req, res) => {
   }
 };
 
-// USER HOME - GET ALL PUBLISHED PLACES
+// USER HOME FEED - GET ALL PUBLISHED PLACES
 export const getAllPlaces = async (req, res) => {
   try {
     const places = await Place.find({ isPublished: true })
@@ -63,7 +96,7 @@ export const getAllPlaces = async (req, res) => {
   }
 };
 
-// USER HOME - GET SINGLE PUBLISHED PLACE
+// USER HOME FEED - GET SINGLE PUBLISHED PLACE
 export const getPlaceById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -131,7 +164,6 @@ export const adminGetPlaceById = async (req, res) => {
 export const updatePlace = async (req, res) => {
   try {
     const { id } = req.params;
-    const { imageUrl, caption, moodTags, isPublished } = req.body;
 
     if (!isValidObjectId(id)) {
       return res.status(400).json({ message: "Invalid place id" });
@@ -143,8 +175,29 @@ export const updatePlace = async (req, res) => {
       return res.status(404).json({ message: "Place not found" });
     }
 
-    if (imageUrl !== undefined) {
-      place.imageUrl = imageUrl.trim();
+    const {
+      placeName,
+      location,
+      caption,
+      moodTags,
+      activities,
+      bestTime,
+      weather,
+      vibe,
+      travelTip,
+      isPublished,
+    } = req.body;
+
+    if (req.file) {
+      place.imageUrl = `/uploads/places/${req.file.filename}`;
+    }
+
+    if (placeName !== undefined) {
+      place.placeName = placeName.trim();
+    }
+
+    if (location !== undefined) {
+      place.location = location.trim();
     }
 
     if (caption !== undefined) {
@@ -152,18 +205,32 @@ export const updatePlace = async (req, res) => {
     }
 
     if (moodTags !== undefined) {
-      if (Array.isArray(moodTags)) {
-        place.moodTags = moodTags.map((tag) => tag.trim()).filter(Boolean);
-      } else if (typeof moodTags === "string") {
-        place.moodTags = moodTags
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean);
-      }
+      place.moodTags = parseArrayField(moodTags);
     }
 
-    if (typeof isPublished === "boolean") {
-      place.isPublished = isPublished;
+    if (activities !== undefined) {
+      place.activities = parseArrayField(activities);
+    }
+
+    if (bestTime !== undefined) {
+      place.bestTime = bestTime.trim();
+    }
+
+    if (weather !== undefined) {
+      place.weather = weather.trim();
+    }
+
+    if (vibe !== undefined) {
+      place.vibe = vibe.trim();
+    }
+
+    if (travelTip !== undefined) {
+      place.travelTip = travelTip.trim();
+    }
+
+    if (isPublished !== undefined) {
+      place.isPublished =
+        String(isPublished).toLowerCase() === "false" ? false : true;
     }
 
     await place.save();

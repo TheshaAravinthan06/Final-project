@@ -3,10 +3,10 @@ type PopularDestinationsProps = {
 };
 
 const destinations = [
-  { name: "Ella", image: "./images/ella.jpg" },
-  { name: "Mirissa", image: "../public/images/mirissa.jpg" },
-  { name: "Sigiriya", image: "../public/images/sigiriya.jpg" },
-  { name: "Nuwara Eliya", image: "../public/images/nuwara-eliya.jpg" },
+  { name: "Ella", image: "./frontend/public/images/ella.jpg" },
+  { name: "Mirissa", image: "./images/mirissa.jpg" },
+  { name: "Sigiriya", image: "./images/sigiriya.jpg" },
+  { name: "Nuwara Eliya", image: "./images/nuwara-eliya.jpg" },
 ];
 
 export default function PopularDestinations({

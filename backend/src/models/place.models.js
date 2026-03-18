@@ -17,9 +17,23 @@ const placeCommentSchema = new mongoose.Schema(
 
 const placeSchema = new mongoose.Schema(
   {
+    placeName: {
+      type: String,
+      required: [true, "Place name is required"],
+      trim: true,
+      maxlength: 100,
+    },
+
+    location: {
+      type: String,
+      required: [true, "Location is required"],
+      trim: true,
+      maxlength: 120,
+    },
+
     imageUrl: {
       type: String,
-      required: [true, "Image URL is required"],
+      required: [true, "Image is required"],
       trim: true,
     },
 
@@ -35,6 +49,39 @@ const placeSchema = new mongoose.Schema(
       default: [],
     },
 
+    activities: {
+      type: [String],
+      default: [],
+    },
+
+    bestTime: {
+      type: String,
+      trim: true,
+      maxlength: 50,
+      default: "",
+    },
+
+    weather: {
+      type: String,
+      trim: true,
+      maxlength: 50,
+      default: "",
+    },
+
+    vibe: {
+      type: String,
+      trim: true,
+      maxlength: 50,
+      default: "",
+    },
+
+    travelTip: {
+      type: String,
+      trim: true,
+      maxlength: 180,
+      default: "",
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -46,7 +93,7 @@ const placeSchema = new mongoose.Schema(
       default: true,
     },
 
-    // future-ready fields
+    // future-ready fields for feed buttons
     likes: [
       {
         type: mongoose.Schema.Types.ObjectId,
