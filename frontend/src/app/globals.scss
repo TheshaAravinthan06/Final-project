@@ -14,7 +14,7 @@ html {
 
 body {
   font-family: Arial, Helvetica, sans-serif;
-  background: $pistage;
+  background: #ffffff;
   color: $text-dark;
 }
 
@@ -32,6 +32,12 @@ textarea {
 button {
   cursor: pointer;
   border: none;
+  background: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
 }
 
 .container {

@@ -185,8 +185,8 @@ export default function AuthModal({
 
         setTimeout(() => {
           handleClose();
-          window.location.reload();
-        }, 1500);
+          router.push("/home");
+        }, 1200);
       } else {
         await api.post("/auth/register", registerData);
 

@@ -25,6 +25,17 @@ const toBoolean = (value, fallback = true) => {
   return String(value).toLowerCase() !== "false";
 };
 
+const subtractDays = (dateInput, days) => {
+  const date = new Date(dateInput);
+  date.setDate(date.getDate() - days);
+  return date;
+};
+
+const startOfToday = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+};
+
 const formatTravelPickResponse = (travelPick) => {
   const obj = travelPick.toObject ? travelPick.toObject() : travelPick;
 
@@ -33,19 +44,31 @@ const formatTravelPickResponse = (travelPick) => {
   const advanceAmount = (price * advancePercentage) / 100;
   const remainingAmount = price - advanceAmount;
 
+  const bookingCloseDate = subtractDays(obj.startDate, 3);
+  const balanceDueDate = subtractDays(obj.startDate, 2);
+
+  const today = startOfToday();
+  const bookingCloseDay = new Date(
+    bookingCloseDate.getFullYear(),
+    bookingCloseDate.getMonth(),
+    bookingCloseDate.getDate()
+  );
+
+  const isBookingOpen = today < bookingCloseDay;
+
   return {
     ...obj,
     advanceAmount,
     remainingAmount,
+    bookingCloseDate,
+    balanceDueDate,
+    isBookingOpen,
   };
 };
 
 // ADMIN - CREATE TRAVEL PICK
 export const createTravelPick = async (req, res) => {
   try {
-    console.log("req.body:", req.body);
-    console.log("req.file:", req.file);
-
     const title = req.body.title?.trim();
     const place = req.body.place?.trim();
     const startDate = req.body.startDate?.trim();
@@ -74,14 +97,6 @@ export const createTravelPick = async (req, res) => {
       return res.status(400).json({
         message:
           "Title, place, start date, end date, caption, and price are required",
-        received: {
-          title,
-          place,
-          startDate,
-          endDate,
-          caption,
-          price,
-        },
       });
     }
 

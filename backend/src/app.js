@@ -9,6 +9,7 @@ import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import placeRoutes from "./routes/place.routes.js";
 import travelPickRoutes from "./routes/travelPick.routes.js";
+import bookingRoutes from "./routes/booking.routes.js";
 
 const app = express();
 
@@ -50,5 +51,6 @@ app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/places", placeRoutes);
 app.use("/travel-picks", travelPickRoutes);
+app.use("/bookings", bookingRoutes);
 
 export default app;
