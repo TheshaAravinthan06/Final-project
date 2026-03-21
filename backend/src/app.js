@@ -13,7 +13,13 @@ import bookingRoutes from "./routes/booking.routes.js";
 
 const app = express();
 
-app.use(helmet());
+// IMPORTANT FIX:
+// Allow frontend on localhost:3000 to load images from backend localhost:5000
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+  })
+);
 
 app.use(
   cors({
@@ -26,6 +32,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Serve uploaded files
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.use(

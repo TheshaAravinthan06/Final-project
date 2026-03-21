@@ -9,16 +9,16 @@ const sha256 = (value) =>
 
 const accessCookieOptions = {
   httpOnly: true,
-  secure: false, // change to true in production
+  secure: false,
   sameSite: "strict",
-  maxAge: 24 * 60 * 60 * 1000, // 1 day
+  maxAge: 24 * 60 * 60 * 1000,
 };
 
 const refreshCookieOptions = {
   httpOnly: true,
-  secure: false, // change to true in production
+  secure: false,
   sameSite: "strict",
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
 // REGISTER
@@ -40,8 +40,11 @@ export const register = async (req, res) => {
       });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedUsername = username.trim();
+
     const existingUser = await User.findOne({
-      $or: [{ email }, { username }],
+      $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
     });
 
     if (existingUser) {
@@ -53,8 +56,8 @@ export const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
-      username,
-      email,
+      username: normalizedUsername,
+      email: normalizedEmail,
       password: hashedPassword,
       dob,
       role: "user",
@@ -77,7 +80,10 @@ export const register = async (req, res) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error("REGISTER ERROR:", error);
+    return res.status(500).json({
+      message: error.message || "Server error during registration",
+    });
   }
 };
 
@@ -90,10 +96,12 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
+    const trimmedIdentifier = identifier.trim();
+
     const user = await User.findOne({
       $or: [
-        { email: identifier.toLowerCase().trim() },
-        { username: identifier.trim() },
+        { email: trimmedIdentifier.toLowerCase() },
+        { username: trimmedIdentifier },
       ],
     });
 
@@ -113,19 +121,14 @@ export const login = async (req, res) => {
 
     user.lastLogin = new Date();
 
-    // generate access token
     const token = generateToken(user);
-
-    // generate refresh token
     const refreshToken = crypto.randomBytes(40).toString("hex");
 
-    // save hashed refresh token in DB
     user.refreshTokenHash = sha256(refreshToken);
     user.refreshTokenExpire = Date.now() + 7 * 24 * 60 * 60 * 1000;
 
     await user.save();
 
-    // set cookies
     res.cookie("token", token, accessCookieOptions);
     res.cookie("refreshToken", refreshToken, refreshCookieOptions);
 
@@ -145,7 +148,10 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error("LOGIN ERROR:", error);
+    return res.status(500).json({
+      message: error.message || "Server error during login",
+    });
   }
 };
 
@@ -182,7 +188,10 @@ export const refreshToken = async (req, res) => {
       role: user.role,
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error("REFRESH TOKEN ERROR:", error);
+    return res.status(500).json({
+      message: error.message || "Server error during refresh",
+    });
   }
 };
 
@@ -221,7 +230,10 @@ export const logoutUser = async (req, res) => {
       message: "Logged out successfully",
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error("LOGOUT ERROR:", error);
+    return res.status(500).json({
+      message: error.message || "Server error during logout",
+    });
   }
 };
 
@@ -261,10 +273,13 @@ This link expires in 10 minutes.
     });
 
     return res.status(200).json({
-      message: "Reset link sent to email",
+      message: "Password reset email sent",
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error("FORGOT PASSWORD ERROR:", error);
+    return res.status(500).json({
+      message: error.message || "Server error during forgot password",
+    });
   }
 };
 
@@ -279,14 +294,28 @@ export const resetPassword = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ message: "Invalid or expired token" });
+      return res.status(400).json({
+        message: "Invalid or expired reset token",
+      });
     }
 
-    if (req.body.password !== req.body.confirmPassword) {
+    const { password, confirmPassword } = req.body;
+
+    if (!password || !confirmPassword) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    if (password !== confirmPassword) {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
-    user.password = await bcrypt.hash(req.body.password, 10);
+    if (password.length < 8) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters",
+      });
+    }
+
+    user.password = await bcrypt.hash(password, 10);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 
@@ -296,6 +325,9 @@ export const resetPassword = async (req, res) => {
       message: "Password reset successful",
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error("RESET PASSWORD ERROR:", error);
+    return res.status(500).json({
+      message: error.message || "Server error during password reset",
+    });
   }
 };

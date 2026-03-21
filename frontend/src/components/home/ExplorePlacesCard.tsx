@@ -49,15 +49,21 @@ type Props = {
   onPlaceUpdated: (updatedPlace: Place) => void;
 };
 
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+
 const getPlaceImageSrc = (imageUrl?: string) => {
   if (!imageUrl) return "/images/ella.jpg";
+
   if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
     return imageUrl;
   }
+
   if (imageUrl.startsWith("/")) {
-    return `http://localhost:5000${imageUrl}`;
+    return `${BACKEND_URL}${imageUrl}`;
   }
-  return `http://localhost:5000/${imageUrl}`;
+
+  return `${BACKEND_URL}/${imageUrl}`;
 };
 
 export default function ExplorePlacesCard({
@@ -68,7 +74,10 @@ export default function ExplorePlacesCard({
   const [showComments, setShowComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
 
-  const imageSrc = useMemo(() => getPlaceImageSrc(place.imageUrl), [place.imageUrl]);
+  const imageSrc = useMemo(
+    () => getPlaceImageSrc(place.imageUrl),
+    [place.imageUrl]
+  );
 
   const handleLike = async () => {
     try {
@@ -131,7 +140,9 @@ export default function ExplorePlacesCard({
     <article className="feed-card place-card">
       <div className="feed-card__header">
         <div className="feed-card__user">
-          <div className="place-avatar">{place.placeName?.charAt(0) || "P"}</div>
+          <div className="place-avatar">
+            {place.placeName?.charAt(0) || "P"}
+          </div>
           <div>
             <h4>{place.placeName}</h4>
             <p>by {place.createdBy?.username || "admin"} · Explore Places</p>
@@ -148,6 +159,7 @@ export default function ExplorePlacesCard({
           src={imageSrc}
           alt={place.placeName}
           onError={(e) => {
+            console.error("Image failed to load:", imageSrc);
             e.currentTarget.src = "/images/ella.jpg";
           }}
         />

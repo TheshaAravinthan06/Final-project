@@ -197,8 +197,12 @@ export default function AuthModal({
         }, 1500);
       }
     } catch (error: any) {
+      console.error("AUTH ERROR:", error?.response?.data || error);
+
       const backendMessage =
-        error?.response?.data?.message || "Something went wrong";
+        error?.response?.data?.message ||
+        error?.message ||
+        "Something went wrong";
 
       if (isLogin) {
         if (
@@ -342,7 +346,7 @@ export default function AuthModal({
             <button
               type="button"
               className="eye-icon"
-              onClick={() => setShowPassword(!showPassword)}
+              onClick={() => setShowPassword((prev) => !prev)}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <FiEyeOff /> : <FiEye />}
@@ -360,7 +364,7 @@ export default function AuthModal({
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 name="confirmPassword"
-                placeholder="Confirm password"
+                placeholder="Confirm Password"
                 value={registerData.confirmPassword}
                 onChange={handleRegisterChange}
                 className={fieldErrors.confirmPassword ? "input-error" : ""}
@@ -369,7 +373,7 @@ export default function AuthModal({
               <button
                 type="button"
                 className="eye-icon"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
                 aria-label={
                   showConfirmPassword
                     ? "Hide confirm password"
