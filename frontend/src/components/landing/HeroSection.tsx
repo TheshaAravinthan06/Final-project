@@ -27,7 +27,7 @@ export default function HeroSection({ onOpenRegister }: HeroSectionProps) {
             </p>
 
             <button className="hero-cta-btn" onClick={onOpenRegister}>
-              Start Your Journey
+              Let's Trip
             </button>
           </div>
 

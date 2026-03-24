@@ -66,6 +66,55 @@ const userSchema = new mongoose.Schema(
     refreshTokenExpire: {
       type: Date,
     },
+
+    profileImage: {
+      type: String,
+      default: "",
+    },
+
+    name: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    bio: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    travelInterest: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    location: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    work: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    followers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
+    following: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   { timestamps: true }
 );

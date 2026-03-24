@@ -12,6 +12,8 @@ import travelPickRoutes from "./routes/travelPick.routes.js";
 import bookingRoutes from "./routes/booking.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import itineraryRoutes from "./routes/itinerary.routes.js";
+import userRoutes from "./routes/user.routes.js";
+import userPostRoutes from "./routes/userPost.routes.js";
 
 const app = express();
 
@@ -60,5 +62,7 @@ app.use("/travel-picks", travelPickRoutes);
 app.use("/bookings", bookingRoutes);
 app.use("/payments", paymentRoutes);
 app.use("/itineraries", itineraryRoutes);
+app.use("/users", userRoutes);
+app.use("/user-posts", userPostRoutes);
 
 export default app;
