@@ -77,6 +77,17 @@ export default function AuthModal({
     }
   }, [type]);
 
+  useEffect(() => {
+    if (!type) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [type]);
+
   if (!type) return null;
 
   const validateLogin = () => {
@@ -245,7 +256,10 @@ export default function AuthModal({
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
-      <div className="auth-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`auth-modal ${isLogin ? "auth-modal-login" : "auth-modal-register"}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           type="button"
           className="modal-close-btn"
@@ -269,34 +283,48 @@ export default function AuthModal({
           <div className="form-error-box">{fieldErrors.general}</div>
         )}
 
-        {!isLogin && (
+        {!isLogin ? (
+          <div className="auth-form-grid">
+            <div className="field-group">
+              <input
+                type="text"
+                name="username"
+                placeholder="Username"
+                value={registerData.username}
+                onChange={handleRegisterChange}
+                className={fieldErrors.username ? "input-error" : ""}
+              />
+              {fieldErrors.username && (
+                <p className="field-error-text">{fieldErrors.username}</p>
+              )}
+            </div>
+
+            <div className="field-group">
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                value={registerData.email}
+                onChange={handleRegisterChange}
+                className={fieldErrors.email ? "input-error" : ""}
+              />
+              {fieldErrors.email && (
+                <p className="field-error-text">{fieldErrors.email}</p>
+              )}
+            </div>
+          </div>
+        ) : (
           <div className="field-group">
             <input
               type="text"
-              name="username"
-              placeholder="Username"
-              value={registerData.username}
-              onChange={handleRegisterChange}
-              className={fieldErrors.username ? "input-error" : ""}
+              name="identifier"
+              placeholder="Username or Email"
+              value={loginData.identifier}
+              onChange={handleLoginChange}
+              className={fieldErrors.identifier ? "input-error" : ""}
             />
-            {fieldErrors.username && (
-              <p className="field-error-text">{fieldErrors.username}</p>
-            )}
-          </div>
-        )}
-
-        {!isLogin && (
-          <div className="field-group">
-            <input
-              type="email"
-              name="email"
-              placeholder="Email"
-              value={registerData.email}
-              onChange={handleRegisterChange}
-              className={fieldErrors.email ? "input-error" : ""}
-            />
-            {fieldErrors.email && (
-              <p className="field-error-text">{fieldErrors.email}</p>
+            {fieldErrors.identifier && (
+              <p className="field-error-text">{fieldErrors.identifier}</p>
             )}
           </div>
         )}
@@ -312,22 +340,6 @@ export default function AuthModal({
             />
             {fieldErrors.dob && (
               <p className="field-error-text">{fieldErrors.dob}</p>
-            )}
-          </div>
-        )}
-
-        {isLogin && (
-          <div className="field-group">
-            <input
-              type="text"
-              name="identifier"
-              placeholder="Username or Email"
-              value={loginData.identifier}
-              onChange={handleLoginChange}
-              className={fieldErrors.identifier ? "input-error" : ""}
-            />
-            {fieldErrors.identifier && (
-              <p className="field-error-text">{fieldErrors.identifier}</p>
             )}
           </div>
         )}

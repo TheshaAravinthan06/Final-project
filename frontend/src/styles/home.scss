@@ -1,8 +1,25 @@
 @use "variables" as *;
 
+.app-shell,
+.home-page {
+  background: linear-gradient(
+    135deg,
+    #142b24 0%,
+    #1b382f 52%,
+    #24443a 100%
+  );
+  min-height: 100vh;
+  color: #f8f6f1;
+}
+
 .app-shell {
   min-height: 100vh;
-  background: $white;
+  background: linear-gradient(
+    135deg,
+    #142b24 0%,
+    #1b382f 52%,
+    #24443a 100%
+  );
 }
 
 .app-shell__content {
@@ -17,7 +34,12 @@
 
 .home-page {
   min-height: 100vh;
-  background: $white;
+  background: linear-gradient(
+    135deg,
+    #142b24 0%,
+    #1b382f 52%,
+    #24443a 100%
+  );
 }
 
 .trip-sidebar {
@@ -26,14 +48,19 @@
   left: 0;
   width: 84px;
   height: 100vh;
-  background: $white;
-  border-right: 1px solid $border-soft;
+  background: linear-gradient(
+    180deg,
+    #142b24 0%,
+    #1b382f 100%
+  );
+  border-right: 1px solid rgba(159, 199, 169, 0.12);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 18px 14px;
   transition: width $transition;
   z-index: 50;
+  box-shadow: 8px 0 30px rgba(15, 23, 42, 0.08);
 
   &:hover {
     width: 250px;
@@ -53,19 +80,20 @@
   gap: 12px;
   padding: 12px 10px;
   border-radius: 18px;
-  color: $calm-green;
+  color: #ffffff;
   margin-bottom: 10px;
 
   &__icon {
     width: 34px;
     height: 34px;
     border-radius: 12px;
-    background: linear-gradient(135deg, $early-green, $calm-green);
-    color: $white;
+    background: linear-gradient(135deg, #5e9f7c, #86b693);
+    color: #ffffff;
     display: grid;
     place-items: center;
     font-weight: 700;
     flex-shrink: 0;
+    box-shadow: 0 12px 24px rgba(94, 159, 124, 0.24);
   }
 
   &__text {
@@ -94,19 +122,24 @@
     gap: 16px;
     padding: 14px 12px;
     border-radius: 18px;
-    color: $text-dark;
+    color: #d8e6dd;
     transition: $transition;
     position: relative;
 
     &:hover {
-      background: $card-bg;
-      color: $calm-green;
+      background: rgba(159, 199, 169, 0.1);
+      color: #ffffff;
     }
 
     &.active {
-      background: rgba(114, 138, 110, 0.12);
-      color: $calm-green;
+      background: linear-gradient(
+        135deg,
+        rgba(94, 159, 124, 0.28),
+        rgba(134, 182, 147, 0.18)
+      );
+      color: #ffffff;
       font-weight: 700;
+      border: 1px solid rgba(159, 199, 169, 0.16);
     }
   }
 
@@ -124,6 +157,7 @@
 
   &__icon {
     font-size: 24px;
+    color: inherit;
   }
 
   &__label {
@@ -141,8 +175,8 @@
     min-width: 20px;
     height: 20px;
     border-radius: $radius-full;
-    background: $danger;
-    color: $white;
+    background: #ef4444;
+    color: #ffffff;
     display: grid;
     place-items: center;
     font-size: 11px;
@@ -161,6 +195,11 @@
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 56px;
   padding: 28px 40px 28px 72px;
+  background: #f7f3eb;
+  border-top-left-radius: 30px;
+  border-top-right-radius: 30px;
+  margin-top: 20px;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08);
 }
 
 .home-main {
@@ -172,24 +211,25 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: $card-bg;
-  border: 1px solid $border-soft;
+  background: #edf4ee;
+  border: 1px solid rgba(159, 199, 169, 0.22);
   border-radius: 999px;
   padding: 6px;
   margin-bottom: 18px;
+  box-shadow: 0 10px 24px rgba(94, 159, 124, 0.08);
 
   button {
     padding: 11px 18px;
     border-radius: 999px;
-    color: $text-muted;
+    color: #5f726b;
     font-weight: 700;
     transition: $transition;
   }
 
   button.active {
-    background: $calm-green;
-    color: $white;
-    box-shadow: $shadow-soft;
+    background: linear-gradient(135deg, #5e9f7c, #86b693);
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(94, 159, 124, 0.18);
   }
 }
 
@@ -198,12 +238,12 @@
 
   h2 {
     font-size: 28px;
-    color: $text-dark;
+    color: #1f3a32;
     margin-bottom: 4px;
   }
 
   p {
-    color: $text-muted;
+    color: #6a7d75;
     font-size: 14px;
   }
 }
@@ -215,24 +255,24 @@
 }
 
 .feed-loading-card {
-  background: $card-bg;
-  border: 1px solid $border-soft;
+  background: #ffffff;
+  border: 1px solid rgba(159, 199, 169, 0.2);
   border-radius: 24px;
   padding: 24px;
-  color: $text-muted;
-  box-shadow: $shadow-soft;
+  color: #60736b;
+  box-shadow: 0 14px 32px rgba(16, 36, 31, 0.06);
 }
 
 .feed-card {
-  background: $white;
-  border: 1px solid $border-soft;
+  background: #ffffff;
+  border: 1px solid rgba(159, 199, 169, 0.18);
   border-radius: 24px;
   overflow: hidden;
-  box-shadow: $shadow-soft;
+  box-shadow: 0 16px 34px rgba(16, 36, 31, 0.08);
   transition: $transition;
 
   &:hover {
-    box-shadow: $shadow-hover;
+    box-shadow: 0 20px 42px rgba(16, 36, 31, 0.12);
   }
 
   &__header {
@@ -263,17 +303,18 @@
     h4 {
       font-size: 15px;
       margin-bottom: 2px;
+      color: #20342d;
     }
 
     p {
       font-size: 13px;
-      color: $text-muted;
+      color: #60736b;
     }
   }
 
   &__image {
     width: 100%;
-    background: #f2f5f1;
+    background: #eef4ee;
 
     img {
       width: 100%;
@@ -306,7 +347,7 @@
     p {
       font-size: 14px;
       line-height: 1.7;
-      color: $text-dark;
+      color: #20342d;
 
       span {
         font-weight: 700;
@@ -317,7 +358,7 @@
 
   &__comments-link {
     margin-top: 10px;
-    color: $text-muted;
+    color: #60736b;
     font-size: 13px;
   }
 }
@@ -328,17 +369,18 @@
   gap: 14px;
   margin-bottom: 12px;
   font-size: 13px;
-  color: $calm-green;
+  color: #5e9f7c;
   font-weight: 700;
 }
 
 .follow-btn {
   padding: 9px 14px;
   border-radius: 999px;
-  background: rgba(114, 138, 110, 0.12);
-  color: $calm-green;
+  background: #edf4ee;
+  color: #365148;
   font-weight: 700;
   font-size: 13px;
+  border: 1px solid rgba(159, 199, 169, 0.22);
 }
 
 .icon-btn {
@@ -347,17 +389,17 @@
   border-radius: 12px;
   display: grid;
   place-items: center;
-  color: $calm-green;
+  color: #365148;
   transition: $transition;
   font-size: 19px;
 
   &:hover {
-    background: rgba(114, 138, 110, 0.12);
+    background: #edf4ee;
   }
 
   &--active {
-    background: rgba(114, 138, 110, 0.16);
-    color: $calm-green;
+    background: rgba(94, 159, 124, 0.12);
+    color: #365148;
   }
 }
 
@@ -371,8 +413,8 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, $early-green, $calm-green);
-  color: $white;
+  background: linear-gradient(135deg, #5e9f7c, #86b693);
+  color: #ffffff;
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -380,19 +422,20 @@
 }
 
 .place-tag-btn {
-  background: rgba(114, 138, 110, 0.13);
-  color: $calm-green;
+  background: #edf4ee;
+  color: #365148;
   padding: 9px 14px;
   border-radius: $radius-full;
   font-size: 12px;
   font-weight: 700;
+  border: 1px solid rgba(159, 199, 169, 0.22);
 }
 
 .place-meta-line {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: $calm-green;
+  color: #5e9f7c;
   margin-bottom: 12px;
   font-size: 14px;
 }
@@ -408,9 +451,9 @@
   margin-bottom: 12px;
 
   span {
-    background: $card-bg;
-    border: 1px solid $border-soft;
-    color: $calm-green;
+    background: #edf4ee;
+    border: 1px solid rgba(159, 199, 169, 0.18);
+    color: #365148;
     padding: 7px 12px;
     border-radius: $radius-full;
     font-size: 12px;
@@ -425,11 +468,11 @@
 
   p {
     font-size: 13px;
-    color: $text-muted;
+    color: #60736b;
     line-height: 1.5;
 
     strong {
-      color: $text-dark;
+      color: #20342d;
       margin-right: 4px;
     }
   }
@@ -443,20 +486,26 @@
   input {
     flex: 1;
     height: 42px;
-    border: 1px solid $border-soft;
+    border: 1px solid rgba(159, 199, 169, 0.2);
     border-radius: 14px;
     padding: 0 14px;
     outline: none;
-    background: $white;
+    background: #ffffff;
+    color: #20342d;
+  }
+
+  input::placeholder {
+    color: #7a8f86;
   }
 
   button {
     padding: 0 16px;
     height: 42px;
     border-radius: 14px;
-    background: $calm-green;
-    color: $white;
+    background: linear-gradient(135deg, #5e9f7c, #86b693);
+    color: #ffffff;
     font-weight: 700;
+    box-shadow: 0 10px 20px rgba(94, 159, 124, 0.18);
   }
 }
 
@@ -467,8 +516,8 @@
 }
 
 .comment-item {
-  background: $card-bg;
-  border: 1px solid $border-soft;
+  background: #f8fbf8;
+  border: 1px solid rgba(159, 199, 169, 0.16);
   border-radius: 14px;
   padding: 10px 12px;
   display: flex;
@@ -476,19 +525,19 @@
   align-items: flex-start;
 
   strong {
-    color: $calm-green;
+    color: #5e9f7c;
     font-size: 13px;
   }
 
   span {
     font-size: 13px;
-    color: $text-dark;
+    color: #20342d;
     line-height: 1.5;
   }
 }
 
 .comment-empty {
-  color: $text-muted;
+  color: #60736b;
   font-size: 13px;
 }
 
@@ -500,10 +549,10 @@
 
 .profile-mini-card,
 .suggest-box {
-  background: $white;
-  border: 1px solid $border-soft;
+  background: #ffffff;
+  border: 1px solid rgba(159, 199, 169, 0.18);
   border-radius: 24px;
-  box-shadow: $shadow-soft;
+  box-shadow: 0 16px 34px rgba(16, 36, 31, 0.08);
 }
 
 .profile-mini-card {
@@ -524,15 +573,16 @@
   h4 {
     font-size: 15px;
     margin-bottom: 2px;
+    color: #20342d;
   }
 
   p {
-    color: $text-muted;
+    color: #60736b;
     font-size: 14px;
   }
 
   button {
-    color: $calm-green;
+    color: #365148;
     font-weight: 700;
   }
 }
@@ -549,11 +599,11 @@
 
     h5 {
       font-size: 16px;
-      color: $text-muted;
+      color: #60736b;
     }
 
     button {
-      color: $calm-green;
+      color: #365148;
       font-weight: 700;
     }
   }
@@ -586,15 +636,16 @@
   h6 {
     font-size: 14px;
     margin-bottom: 3px;
+    color: #20342d;
   }
 
   p {
     font-size: 12px;
-    color: $text-muted;
+    color: #60736b;
   }
 
   button {
-    color: $calm-green;
+    color: #365148;
     font-weight: 700;
     font-size: 14px;
   }
@@ -602,7 +653,7 @@
 
 .right-footer {
   padding: 8px 4px;
-  color: $text-muted;
+  color: #60736b;
   font-size: 12px;
   line-height: 1.8;
 }

@@ -15,19 +15,20 @@ export default function HomePage() {
 
   return (
     <>
-      <Navbar
-        onOpenLogin={() => setModalType("login")}
-        onOpenRegister={() => setModalType("register")}
-      />
+      <div className={`landing-page-shell ${modalType ? "modal-open" : ""}`}>
+        <Navbar
+          onOpenLogin={() => setModalType("login")}
+          onOpenRegister={() => setModalType("register")}
+        />
 
-      <HeroSection onOpenRegister={() => setModalType("register")} />
-      <AboutSection />
-      <HowItWorks onOpenLogin={() => setModalType("login")} />
-      <PopularDestinations onOpenLogin={() => setModalType("login")} />
-      <Footer />
-     
-      <FloatingAI onOpenLogin={() => setModalType("login")} />
-     
+        <HeroSection onOpenRegister={() => setModalType("register")} />
+        <AboutSection />
+        <HowItWorks onOpenLogin={() => setModalType("login")} />
+        <PopularDestinations onOpenLogin={() => setModalType("login")} />
+        <Footer />
+        <FloatingAI onOpenLogin={() => setModalType("login")} />
+      </div>
+
       <AuthModal
         type={modalType}
         onClose={() => setModalType(null)}

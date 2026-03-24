@@ -3,10 +3,21 @@ type PopularDestinationsProps = {
 };
 
 const destinations = [
-  { name: "Ella", image: "./frontend/public/images/ella.jpg" },
-  { name: "Mirissa", image: "./images/mirissa.jpg" },
-  { name: "Sigiriya", image: "./images/sigiriya.jpg" },
-  { name: "Nuwara Eliya", image: "./images/nuwara-eliya.jpg" },
+  {
+    name: "Ella",
+    image: "/images/ella.jpg",
+    text: "A calm green escape with mountain views, train rides, and peaceful stays.",
+  },
+  {
+    name: "Mirissa",
+    image: "/images/mirissa.jpg",
+    text: "Perfect for sunny beach moods, ocean views, and relaxed coastal energy.",
+  },
+  {
+    name: "Sigiriya",
+    image: "/images/sigiriya.jpg",
+    text: "A bold and inspiring destination for culture, adventure, and iconic scenery.",
+  },
 ];
 
 export default function PopularDestinations({
@@ -17,7 +28,7 @@ export default function PopularDestinations({
       <div className="container">
         <div className="section-heading fade-up">
           <h2>Popular Destinations</h2>
-          <p>Discover beautiful places that can inspire your next trip.</p>
+          <p>Beautiful places chosen to match different moods and travel styles.</p>
         </div>
 
         <div className="destination-grid">
@@ -25,10 +36,11 @@ export default function PopularDestinations({
             <div key={place.name} className={`destination-card fade-up delay-${index}`}>
               <div
                 className="destination-image"
-                style={{ background: place.image }}
-              ></div>
+                style={{ backgroundImage: `url(${place.image})` }}
+              />
               <div className="destination-content">
                 <h3>{place.name}</h3>
+                <p>{place.text}</p>
                 <button className="small-btn" onClick={onOpenLogin}>
                   Explore
                 </button>

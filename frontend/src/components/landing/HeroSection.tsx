@@ -2,6 +2,13 @@ type HeroSectionProps = {
   onOpenRegister: () => void;
 };
 
+const whyChooseItems = [
+  "AI-powered itineraries based on your mood",
+  "Safe group travel and meaningful connections",
+  "Beautiful places curated for how you want to feel",
+  "A calmer and more personal way to plan trips",
+];
+
 export default function HeroSection({ onOpenRegister }: HeroSectionProps) {
   return (
     <section id="home" className="hero-section">
@@ -9,33 +16,53 @@ export default function HeroSection({ onOpenRegister }: HeroSectionProps) {
         <div className="container hero-grid">
           <div className="hero-left fade-up">
             <div className="hero-badge">
-              AI-powered mood-based travel planning
+              Mood-based journeys with AI and community
             </div>
 
-            <h1>
-              Discover journeys that match your mood and your people
-            </h1>
+            <h1>Travel that feels like your mood, not just a booking</h1>
 
             <p>
-              Plan meaningful trips with AI, explore curated places, discover
-              travel diaries, and create unforgettable experiences in one
-              beautiful platform.
+              Discover places, create mood-matching itineraries, join meaningful
+              trips, and enjoy a more beautiful way to plan travel with Trip AI.
             </p>
 
             <button className="hero-cta-btn" onClick={onOpenRegister}>
-              Let&apos;s Plan
+              Start Your Journey
             </button>
           </div>
 
-          <div className="hero-right-card fade-up delay-1">
-            <h3>Why Choose Us?</h3>
-            <ul>
-              <li>Personalized travel planning</li>
-              <li>AI itinerary support</li>
-              <li>Curated places and travel picks</li>
-              <li>Social travel diaries</li>
-              <li>Simple travel inspiration in one place</li>
-            </ul>
+          <div className="hero-right fade-up delay-1">
+            <div className="hero-why-card">
+              <span className="hero-why-label">Why choose Trip AI</span>
+
+              <h3>Why Choose Us?</h3>
+
+              <ul className="hero-why-list">
+                {whyChooseItems.map((item) => (
+                  <li key={item}>
+                    <span className="hero-why-dot" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="hero-why-mini">
+                <div className="hero-why-stat">
+                  <strong>AI</strong>
+                  <p>Smart planning</p>
+                </div>
+
+                <div className="hero-why-stat">
+                  <strong>Mood</strong>
+                  <p>Personal matches</p>
+                </div>
+
+                <div className="hero-why-stat">
+                  <strong>Safe</strong>
+                  <p>Trusted trips</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

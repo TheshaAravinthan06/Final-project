@@ -10,11 +10,11 @@ import adminRoutes from "./routes/admin.routes.js";
 import placeRoutes from "./routes/place.routes.js";
 import travelPickRoutes from "./routes/travelPick.routes.js";
 import bookingRoutes from "./routes/booking.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
+import itineraryRoutes from "./routes/itinerary.routes.js";
 
 const app = express();
 
-// IMPORTANT FIX:
-// Allow frontend on localhost:3000 to load images from backend localhost:5000
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
@@ -32,7 +32,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Serve uploaded files
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.use(
@@ -59,5 +58,7 @@ app.use("/admin", adminRoutes);
 app.use("/places", placeRoutes);
 app.use("/travel-picks", travelPickRoutes);
 app.use("/bookings", bookingRoutes);
+app.use("/payments", paymentRoutes);
+app.use("/itineraries", itineraryRoutes);
 
 export default app;
