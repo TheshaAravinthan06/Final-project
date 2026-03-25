@@ -5,6 +5,12 @@ import {
   createUserPost,
   getAllUserPosts,
   getPostsByUserId,
+  likeUserPost,
+  unlikeUserPost,
+  saveUserPost,
+  unsaveUserPost,
+  addCommentToUserPost,
+  deleteCommentFromUserPost,
 } from "../controllers/userPost.controller.js";
 
 const router = express.Router();
@@ -12,5 +18,14 @@ const router = express.Router();
 router.post("/", protect, uploadUserPostImage.single("image"), createUserPost);
 router.get("/", getAllUserPosts);
 router.get("/user/:userId", getPostsByUserId);
+
+router.post("/:id/like", protect, likeUserPost);
+router.post("/:id/unlike", protect, unlikeUserPost);
+
+router.post("/:id/save", protect, saveUserPost);
+router.post("/:id/unsave", protect, unsaveUserPost);
+
+router.post("/:id/comment", protect, addCommentToUserPost);
+router.delete("/:postId/comment/:commentId", protect, deleteCommentFromUserPost);
 
 export default router;
