@@ -14,6 +14,7 @@ import paymentRoutes from "./routes/payment.routes.js";
 import itineraryRoutes from "./routes/itinerary.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import userPostRoutes from "./routes/userPost.routes.js";
+import aiRoutes from "./routes/ai.routes.js";
 
 const app = express();
 
@@ -64,5 +65,6 @@ app.use("/payments", paymentRoutes);
 app.use("/itineraries", itineraryRoutes);
 app.use("/users", userRoutes);
 app.use("/user-posts", userPostRoutes);
+app.use("/ai", aiRoutes);
 
 export default app;

@@ -188,26 +188,33 @@ export default function AuthModal({
 
     setLoading(true);
 
-    try {
-      if (isLogin) {
-        await api.post("/auth/login", loginData);
+  try {
+  if (isLogin) {
+    const res = await api.post("/auth/login", loginData);
 
-        setSuccessMessage("Login successful");
+    setSuccessMessage("Login successful");
 
-        setTimeout(() => {
-          handleClose();
-          router.push("/home");
-        }, 1200);
+    setTimeout(() => {
+      handleClose();
+
+      const role = res?.data?.user?.role || res?.data?.role;
+
+      if (role === "admin") {
+        router.push("/admin");
       } else {
-        await api.post("/auth/register", registerData);
-
-        setSuccessMessage("Registration successful");
-
-        setTimeout(() => {
-          handleSwitchModal("login");
-        }, 1500);
+        router.push("/home");
       }
-    } catch (error: any) {
+    }, 1200);
+  } else {
+    await api.post("/auth/register", registerData);
+
+    setSuccessMessage("Registration successful");
+
+    setTimeout(() => {
+      handleSwitchModal("login");
+    }, 1500);
+  }
+} catch (error: any) {
       console.error("AUTH ERROR:", error?.response?.data || error);
 
       const backendMessage =
