@@ -2,31 +2,61 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import {
   FiHome,
-  FiSearch,
-  FiCompass,
-  FiMessageCircle,
-  FiHeart,
+  FiBell,
   FiPlusSquare,
   FiUser,
   FiMenu,
   FiMapPin,
+  FiCpu,
+  FiSettings,
+  FiActivity,
+  FiBookmark,
+  FiSun,
+  FiAlertCircle,
+  FiLogOut,
+  FiSearch,
 } from "react-icons/fi";
 
-const navItems = [
-  { label: "Home", href: "/home", icon: FiHome },
-  { label: "Search", href: "/home", icon: FiSearch },
-  { label: "Explore Places", href: "/home", icon: FiCompass },
-  { label: "Messages", href: "/messages", icon: FiMessageCircle },
-  { label: "Travel Picks", href: "/home", icon: FiMapPin },
-  { label: "Notifications", href: "/home", icon: FiHeart, badge: 2 },
-  { label: "Create", href: "/home", icon: FiPlusSquare },
-  { label: "Profile", href: "/home", icon: FiUser },
+type SidebarProps = {
+  onOpenSearch: () => void;
+  onOpenNotifications: () => void;
+};
+
+const moreMenuItems = [
+  { label: "Settings", href: "/settings", icon: FiSettings },
+  { label: "Your activity", href: "/activity", icon: FiActivity },
+  { label: "Saved", href: "/saved", icon: FiBookmark },
+  { label: "Switch appearance", href: "/appearance", icon: FiSun },
+  { label: "Report a problem", href: "/report-problem", icon: FiAlertCircle },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({
+  onOpenSearch,
+  onOpenNotifications,
+}: SidebarProps) {
   const pathname = usePathname();
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(event.target as Node)) {
+        setIsMoreOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    setIsMoreOpen(false);
+  }, [pathname]);
 
   return (
     <aside className="trip-sidebar">
@@ -37,37 +67,148 @@ export default function Sidebar() {
         </Link>
 
         <nav className="trip-nav">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
+          <Link
+            href="/home"
+            className={`trip-nav__item ${pathname === "/home" ? "active" : ""}`}
+          >
+            <span className="trip-nav__icon-wrap">
+              <span className="trip-nav__icon-box">
+                <FiHome className="trip-nav__icon" />
+              </span>
+            </span>
+            <span className="trip-nav__label">Home</span>
+          </Link>
 
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`trip-nav__item ${isActive ? "active" : ""}`}
-              >
-                <span className="trip-nav__icon-wrap">
-                  <Icon className="trip-nav__icon" />
-                  {item.badge ? (
-                    <span className="trip-nav__badge">{item.badge}</span>
-                  ) : null}
-                </span>
+          <Link
+            href="/travel-picks"
+            className={`trip-nav__item ${
+              pathname === "/travel-picks" ? "active" : ""
+            }`}
+          >
+            <span className="trip-nav__icon-wrap">
+              <span className="trip-nav__icon-box">
+                <FiMapPin className="trip-nav__icon" />
+              </span>
+            </span>
+            <span className="trip-nav__label">Travel Picks</span>
+          </Link>
 
-                <span className="trip-nav__label">{item.label}</span>
-              </Link>
-            );
-          })}
+          <Link
+            href="/ai"
+            className={`trip-nav__item ${pathname === "/ai" ? "active" : ""}`}
+          >
+            <span className="trip-nav__icon-wrap">
+              <span className="trip-nav__icon-box">
+                <FiCpu className="trip-nav__icon" />
+              </span>
+            </span>
+            <span className="trip-nav__label">AI</span>
+          </Link>
+
+          <button
+            type="button"
+            className="trip-nav__item trip-nav__button"
+            onClick={onOpenSearch}
+          >
+            <span className="trip-nav__icon-wrap">
+              <span className="trip-nav__icon-box">
+                <FiSearch className="trip-nav__icon" />
+              </span>
+            </span>
+            <span className="trip-nav__label">Search</span>
+          </button>
+
+          <Link
+            href="/create-post"
+            className={`trip-nav__item ${
+              pathname === "/create-post" ? "active" : ""
+            }`}
+          >
+            <span className="trip-nav__icon-wrap">
+              <span className="trip-nav__icon-box">
+                <FiPlusSquare className="trip-nav__icon" />
+              </span>
+            </span>
+            <span className="trip-nav__label">Create Post</span>
+          </Link>
+
+          <button
+            type="button"
+            className="trip-nav__item trip-nav__button"
+            onClick={onOpenNotifications}
+          >
+            <span className="trip-nav__icon-wrap">
+              <span className="trip-nav__icon-box">
+                <FiBell className="trip-nav__icon" />
+              </span>
+            </span>
+            <span className="trip-nav__label">Notifications</span>
+          </button>
+
+          <Link
+            href="/profile"
+            className={`trip-nav__item ${pathname === "/profile" ? "active" : ""}`}
+          >
+            <span className="trip-nav__icon-wrap">
+              <span className="trip-nav__icon-box">
+                <FiUser className="trip-nav__icon" />
+              </span>
+            </span>
+            <span className="trip-nav__label">Profile</span>
+          </Link>
         </nav>
       </div>
 
-      <div className="trip-sidebar__bottom">
-        <button type="button" className="trip-nav__item trip-nav__button">
+      <div className="trip-sidebar__bottom" ref={moreRef}>
+        <button
+          type="button"
+          className={`trip-nav__item trip-nav__button ${
+            isMoreOpen ? "active" : ""
+          }`}
+          onClick={() => setIsMoreOpen((prev) => !prev)}
+        >
           <span className="trip-nav__icon-wrap">
-            <FiMenu className="trip-nav__icon" />
+            <span className="trip-nav__icon-box">
+              <FiMenu className="trip-nav__icon" />
+            </span>
           </span>
           <span className="trip-nav__label">More</span>
         </button>
+
+        {isMoreOpen && (
+          <div className="trip-more-menu">
+            <div className="trip-more-menu__group">
+              {moreMenuItems.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="trip-more-menu__item"
+                  >
+                    <span className="trip-more-menu__icon">
+                      <Icon />
+                    </span>
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="trip-more-menu__group trip-more-menu__group--logout">
+              <button
+                type="button"
+                className="trip-more-menu__item trip-more-menu__logout"
+              >
+                <span className="trip-more-menu__icon">
+                  <FiLogOut />
+                </span>
+                <span>Log out</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );

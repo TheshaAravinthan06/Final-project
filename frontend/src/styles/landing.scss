@@ -292,158 +292,233 @@
   color: rgba(220, 233, 225, 0.9);
 }
 
+#about {
+  scroll-margin-top: 80px;
+}
+
 /* =========================
-   ABOUT US SECTION
+   ABOUT SECTION - FINAL CLEAN (NO EXTRA IMAGE SPACE)
 ========================= */
 
-.section-soft {
-  background: linear-gradient(
-    180deg,
-    #f7f3eb 0%,
-    #eef4ee 100%
-  );
+.about-reference-section {
+  padding: 40px 0 70px;
+  background: linear-gradient(180deg, #f7f3eb 0%, #eef4ee 100%);
 }
 
-.about-section {
-  padding: 100px 0;
+.about-reference-section .container {
+  max-width: 1220px;
 }
 
-/* HEADING */
-
-.section-heading {
-  text-align: center;
-  margin-bottom: 60px;
-
-  h2 {
-    font-size: 48px;
-    color: #1f3a32;
-    margin-bottom: 14px;
-    letter-spacing: -0.5px;
-  }
-
-  p {
-    color: #6a7d75;
-    font-size: 18px;
-    max-width: 720px;
-    margin: 0 auto;
-    line-height: 1.7;
-  }
-}
-
-/* GRID */
-
-.about-grid {
+.about-reference {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 26px;
+  grid-template-columns: 1.02fr 0.98fr;
+  grid-template-areas:
+    "heading heading"
+    "image main"
+    "image cards";
+  column-gap: 22px;
+  row-gap: 18px; /* KEEP TIGHT — no extra spacing */
+  align-items: start;
 }
 
-/* CARD */
-
-.about-card {
-  padding: 28px 26px;
-  border-radius: 22px;
-
-  background: linear-gradient(
-    135deg,
-    #0f2a22 0%,
-    #163d32 100%
-  );
-
-  border: 1px solid rgba(255, 255, 255, 0.08);
-
-  box-shadow:
-    0 18px 40px rgba(16, 36, 31, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-
-  transition: all 0.3s ease;
-
-  backdrop-filter: blur(6px);
-
-  &:hover {
-    transform: translateY(-6px);
-    box-shadow:
-      0 24px 50px rgba(16, 36, 31, 0.18),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  }
-
-  h3 {
-    font-size: 20px;
-    margin-bottom: 10px;
-    color: #ffffff;
-    letter-spacing: 0.2px;
-  }
-
-  p {
-    font-size: 15px;
-    color: rgba(255, 255, 255, 0.92);
-    line-height: 1.6;
-  }
+/* heading */
+.about-reference__heading {
+  grid-area: heading;
+  padding-left: 4px;
 }
 
-/* OPTIONAL: subtle divider lines inside cards */
+.about-reference__heading h2 {
+  margin: 0;
+  font-size: 42px;
+  line-height: 1.08;
+  letter-spacing: -0.7px;
+  color: #18392f;
+}
 
-.about-card::after {
-  content: "";
-  display: block;
-  height: 1px;
-  margin-top: 14px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.08),
-    transparent
-  );
+/* image */
+.about-reference__image {
+  grid-area: image;
+  position: relative;
+  height: 440px;
+  overflow: hidden;
+  border-radius: 30px;
+  box-shadow: 0 18px 38px rgba(15, 45, 37, 0.12);
+}
+
+.about-reference__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* main card */
+.about-reference__main-card {
+  grid-area: main;
+  min-height: 250px;
+  border-radius: 30px;
+  padding: 32px 36px;
+  background: linear-gradient(135deg, #0f342d 0%, #134638 100%);
+  color: #f5f7f4;
+  box-shadow: 0 18px 38px rgba(15, 45, 37, 0.14);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.about-reference__main-card h3 {
+  margin: 0 0 16px;
+  font-size: 32px;
+  line-height: 1.1;
+  color: #d6e3a8;
+}
+
+.about-reference__main-card p {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.75;
+  color: rgba(244, 247, 244, 0.9);
+}
+
+/* cards wrapper */
+.about-reference__cards {
+  grid-area: cards;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 4px; /* very small push only */
+}
+
+/* bottom cards */
+.about-reference__small-card {
+  min-height: 150px; /* reduced */
+  border-radius: 24px;
+  padding: 18px 18px 14px;
+  background: linear-gradient(135deg, #12372f 0%, #184438 100%);
+  color: #f5f7f4;
+  box-shadow: 0 14px 28px rgba(15, 45, 37, 0.12);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.about-reference__small-card h4 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  line-height: 1.2;
+  color: #d6e3a8;
+}
+
+.about-reference__small-card p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(244, 247, 244, 0.85);
+}
+
+/* button */
+.about-reference__small-card button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.about-reference__small-card button::after {
+  content: "➜";
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $accent-color;
+  font-size: 12px;
+  transition: transform 0.3s ease;
+}
+
+.about-reference__small-card:hover button::after {
+  transform: translateX(3px);
 }
 
 /* =========================
    RESPONSIVE
 ========================= */
 
-@media (max-width: 992px) {
-  .section-heading h2 {
-    font-size: 42px;
+@media (max-width: 1200px) {
+  .about-reference {
+    grid-template-columns: 1fr 1fr;
   }
 
-  .section-heading p {
-    font-size: 17px;
+  .about-reference__image {
+    height: 410px;
+  }
+
+  .about-reference__main-card {
+    padding: 28px 28px;
+  }
+
+  .about-reference__small-card {
+    min-height: 140px;
+  }
+}
+
+@media (max-width: 992px) {
+  .about-reference {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "heading"
+      "image"
+      "main"
+      "cards";
+    gap: 18px;
+  }
+
+  .about-reference__image {
+    height: 320px;
+  }
+
+  .about-reference__cards {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 768px) {
-  .about-grid {
-    grid-template-columns: 1fr;
+  .about-reference-section {
+    padding: 32px 0 50px;
   }
 
-  .about-section {
-    padding: 80px 0;
-  }
-
-  .section-heading h2 {
-    font-size: 36px;
-  }
-
-  .section-heading p {
-    font-size: 16px;
-  }
-
-  .about-card {
-    padding: 24px 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .section-heading h2 {
+  .about-reference__heading h2 {
     font-size: 30px;
   }
 
-  .about-card h3 {
-    font-size: 18px;
+  .about-reference__image {
+    height: 260px;
+    border-radius: 24px;
   }
 
-  .about-card p {
-    font-size: 14px;
+  .about-reference__main-card {
+    padding: 22px 18px;
+    border-radius: 24px;
   }
+
+  .about-reference__main-card h3 {
+    font-size: 26px;
+  }
+
+  .about-reference__small-card {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+.about-reference__heading {
+  margin-top: 6px;
+}
+
 }
 
 /* HOW */
@@ -495,6 +570,7 @@
   font-size: 24px;
   box-shadow: $shadow-glow;
 }
+
 
 /* DESTINATIONS */
 

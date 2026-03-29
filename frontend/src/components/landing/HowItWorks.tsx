@@ -4,43 +4,80 @@ type HowItWorksProps = {
 
 const steps = [
   {
-    title: "Choose Your Mood",
-    text: "Tell the platform how you feel and what kind of travel you want.",
+    title: "Choose Mood",
+    text: "Tell us how you feel and what kind of trip you want.",
+    image: "/images/mirissa.jpg",
+    count: "01",
   },
   {
-    title: "Get AI Itinerary",
-    text: "Receive an itinerary that matches your mood and travel preferences.",
+    title: "Get AI Plan",
+    text: "Receive a mood-based itinerary made for your travel style.",
+    image: "/images/ella.jpg",
+    count: "02",
   },
   {
-    title: "Join Travelers",
-    text: "Explore a more social travel experience with like-minded people.",
+    title: "Find Travel Vibe",
+    text: "Explore places, moods, and people that match your energy.",
+    image: "/images/nuwar.jpg",
+    count: "03",
   },
   {
-    title: "Enjoy Your Trip",
-    text: "Save ideas, plan better, and enjoy your journey with confidence.",
+    title: "Enjoy the Trip",
+    text: "Save ideas, connect, and travel with more confidence.",
+    image: "/images/sigiriya.jpg",
+    count: "04",
+  },
+  {
+    title: "Travel Together",
+    text: "Join like-minded travelers and make the trip more social.",
+    image: "/images/about-travel.jpeg",
+    count: "05",
   },
 ];
 
 export default function HowItWorks({ onOpenLogin }: HowItWorksProps) {
   return (
-    <section className="section section-dark">
+    <section id="how-it-works" className="section section-soft how-works-showcase">
       <div className="container">
         <div className="section-heading fade-up">
           <h2>How It Works</h2>
-          <p>A simple and inspiring way to start your next journey.</p>
+          <p>
+            A simple and inspiring way to plan your next trip based on your mood.
+          </p>
         </div>
 
-        <div className="info-grid">
-          {steps.map((step, index) => (
-            <div key={step.title} className={`info-card fade-up delay-${index}`}>
-              <div className="info-icon">✦</div>
-              <h3>{step.title}</h3>
-              <p>{step.text}</p>
-              <button className="small-btn" onClick={onOpenLogin}>
-                Explore
-              </button>
-            </div>
-          ))}
+        <div className="how-works-slider-wrap fade-up delay-1">
+          <div className="how-works-slider">
+            {steps.map((step, index) => {
+              const isCenter = index === 2;
+
+              return (
+                <article
+                  key={step.title}
+                  className={`how-works-card ${isCenter ? "is-active" : ""}`}
+                >
+                  <div
+                    className="how-works-card__image"
+                    style={{ backgroundImage: `url(${step.image})` }}
+                  />
+                  <div className="how-works-card__overlay" />
+
+                  <div className="how-works-card__content">
+                    <span className="how-works-card__count">{step.count}</span>
+                    <h3>{step.title}</h3>
+                    <p>{step.text}</p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="how-works-footer fade-up delay-2">
+          <span>‹ Swipe ›</span>
+          <button className="small-btn" onClick={onOpenLogin}>
+            Explore Now
+          </button>
         </div>
       </div>
     </section>

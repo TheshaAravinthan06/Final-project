@@ -1,44 +1,56 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import {
-  FiX,
-  FiMapPin,
-  FiCalendar,
-  FiDollarSign,
+  FiHeart,
+  FiMessageCircle,
+  FiBookmark,
   FiMoreHorizontal,
+  FiMapPin,
+  FiX,
   FiTrash2,
   FiEyeOff,
   FiEdit2,
+  FiChevronLeft,
+  FiChevronRight,
 } from "react-icons/fi";
 
-type TravelPick = {
+type PlaceComment = {
   _id: string;
-  title: string;
-  place: string;
+  text: string;
+  createdAt: string;
+  replyTo?: string | null;
+  isAdminReply?: boolean;
+  user: {
+    _id: string;
+    username: string;
+  } | null;
+};
+
+type Place = {
+  _id: string;
+  placeName: string;
+  location: string;
   imageUrl: string;
-  price: number;
-  startDate: string;
-  endDate: string;
   caption: string;
-  placesToVisit?: string[];
-  accommodation?: string;
-  meals?: string;
-  transportation?: string;
-  tourGuide?: string;
-  paymentInfo?: string;
-  moreDetails?: string;
-  advancePolicy?: string;
-  advancePercentage?: number;
-  cancellationPolicy?: string;
-  refundPolicy?: string;
-  isPublished?: boolean;
+  moodTags: string[];
+  likesCount: number;
+  commentsCount: number;
+  savesCount?: number;
+  comments: PlaceComment[];
+  isPublished: boolean;
+  createdAt: string;
 };
 
 type Props = {
-  pickId: string;
+  placeId: string;
   onClose: () => void;
+  onPlaceUpdated: (updatedPlace: Place) => void;
+  onPlaceDeleted: (placeId: string) => void;
+  onPrev?: () => void;
+  onNext?: () => void;
 };
 
 const BACKEND_URL =
@@ -50,59 +62,127 @@ const getImageSrc = (imageUrl?: string) => {
   return `${BACKEND_URL}${imageUrl}`;
 };
 
-const formatDate = (value?: string) => {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
+const formatPostDate = (dateString: string) => {
+  const now = new Date();
+  const postedAt = new Date(dateString);
+  const diffMs = now.getTime() - postedAt.getTime();
+
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  const diffMinutes = Math.floor(diffMs / minute);
+  const diffHours = Math.floor(diffMs / hour);
+  const diffDays = Math.floor(diffMs / day);
+
+  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return postedAt.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
     year: "numeric",
   });
 };
 
-export default function TravelPickModal({ pickId, onClose }: Props) {
-  const [pick, setPick] = useState<TravelPick | null>(null);
+export default function PlaceAdminModal({
+  placeId,
+  onClose,
+  onPlaceUpdated,
+  onPlaceDeleted,
+  onPrev,
+  onNext,
+}: Props) {
+  const router = useRouter();
+  const [place, setPlace] = useState<Place | null>(null);
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [replyTo, setReplyTo] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchPick = async () => {
+    const fetchPlace = async () => {
       try {
-        const res = await api.get(`/travel-picks/admin/${pickId}`);
-        setPick(res.data.travelPick);
+        setLoading(true);
+        const res = await api.get(`/places/admin/${placeId}`);
+        setPlace(res.data.place);
       } catch (error) {
-        console.error("Failed to load travel pick:", error);
+        console.error("Failed to load place:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPick();
-  }, [pickId]);
+    fetchPlace();
+  }, [placeId]);
 
-  const handleDelete = async () => {
+  const rootComments = useMemo(() => {
+    return (place?.comments || []).filter((comment) => !comment.replyTo);
+  }, [place]);
+
+  const childReplies = (commentId: string) =>
+    (place?.comments || []).filter((comment) => comment.replyTo === commentId);
+
+  const syncPlace = (updatedPlace: Place) => {
+    setPlace(updatedPlace);
+    onPlaceUpdated(updatedPlace);
+  };
+
+  const handleReply = async () => {
+    if (!replyText.trim() || !replyTo) return;
+
     try {
-      await api.delete(`/travel-picks/${pickId}`);
-      onClose();
+      const res = await api.post(`/places/${placeId}/comments`, {
+        text: replyText,
+        replyTo,
+      });
+
+      syncPlace(res.data.place);
+      setReplyText("");
+      setReplyTo(null);
     } catch (error) {
-      console.error("Failed to delete travel pick:", error);
+      console.error("Reply failed:", error);
     }
   };
 
-  const handleHide = async () => {
+  const handleDeleteComment = async (commentId: string) => {
     try {
-      await api.patch(`/travel-picks/${pickId}`, {
-        isPublished: false,
-      });
-      setPick((prev) => (prev ? { ...prev, isPublished: false } : prev));
+      const res = await api.delete(`/places/${placeId}/comments/${commentId}`);
+      syncPlace(res.data.place);
+    } catch (error) {
+      console.error("Delete comment failed:", error);
+    }
+  };
+
+  const handleHidePlace = async () => {
+    try {
+      const res = await api.patch(`/admin/places/${placeId}/hide`);
+      const updatedPlace = res.data.place || { ...place!, isPublished: false };
+      syncPlace(updatedPlace);
       setShowMenu(false);
     } catch (error) {
-      console.error("Failed to hide travel pick:", error);
+      console.error("Hide failed:", error);
     }
   };
 
-  if (loading || !pick) {
+  const handleDeletePlace = async () => {
+    try {
+      await api.delete(`/places/${placeId}`);
+      onPlaceDeleted(placeId);
+      onClose();
+    } catch (error) {
+      console.error("Delete place failed:", error);
+    }
+  };
+
+  const handleEditPlace = () => {
+    router.push(`/admin/places/edit/${placeId}`);
+  };
+
+  if (loading || !place) {
     return (
       <div className="admin-post-modal-backdrop" onClick={onClose}>
         <div
@@ -117,158 +197,180 @@ export default function TravelPickModal({ pickId, onClose }: Props) {
 
   return (
     <div className="admin-post-modal-backdrop" onClick={onClose}>
-      <div
-        className="admin-post-modal admin-post-modal--travel-pick"
-        onClick={(e) => e.stopPropagation()}
-      >
+      {onPrev && (
         <button
           type="button"
-          className="admin-post-modal__close"
-          onClick={onClose}
+          className="admin-modal-arrow admin-modal-arrow--left"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPrev();
+          }}
         >
-          <FiX />
+          <FiChevronLeft />
         </button>
+      )}
 
-        <div className="admin-post-modal__image">
-          <img src={getImageSrc(pick.imageUrl)} alt={pick.title} />
-        </div>
+      {onNext && (
+        <button
+          type="button"
+          className="admin-modal-arrow admin-modal-arrow--right"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNext();
+          }}
+        >
+          <FiChevronRight />
+        </button>
+      )}
 
-        <div className="admin-post-modal__content">
-          <div className="admin-post-modal__header">
-            <div>
-              <h3>{pick.title}</h3>
-              <p>
-                <FiMapPin />
-                {pick.place}
-              </p>
-            </div>
+      <div className="admin-post-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="admin-post-modal__top-actions">
+          <div className="admin-post-modal__menu-wrap">
+            <button
+              type="button"
+              className="admin-modal-top-btn"
+              onClick={() => setShowMenu((prev) => !prev)}
+            >
+              <FiMoreHorizontal />
+            </button>
 
-            <div className="admin-post-modal__menu-wrap">
-              <button
-                type="button"
-                className="admin-icon-btn"
-                onClick={() => setShowMenu((prev) => !prev)}
-              >
-                <FiMoreHorizontal />
-              </button>
+            {showMenu && (
+              <div className="admin-post-actions-menu">
+                <button type="button" onClick={handleEditPlace}>
+                  <FiEdit2 />
+                  Edit
+                </button>
 
-              {showMenu && (
-                <div className="admin-post-actions-menu">
-                  <button type="button">
-                    <FiEdit2 />
-                    Edit
-                  </button>
+                <button type="button" onClick={handleHidePlace}>
+                  <FiEyeOff />
+                  Hide from users
+                </button>
 
-                  <button type="button" onClick={handleHide}>
-                    <FiEyeOff />
-                    Hide from users
-                  </button>
+                <button
+                  type="button"
+                  onClick={handleDeletePlace}
+                  className="danger"
+                >
+                  <FiTrash2 />
+                  Delete
+                </button>
 
-                  <button
-                    type="button"
-                    className="danger"
-                    onClick={handleDelete}
-                  >
-                    <FiTrash2 />
-                    Delete
-                  </button>
-
-                  <button type="button" onClick={() => setShowMenu(false)}>
-                    Cancel
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="admin-post-modal__caption">
-            <p>{pick.caption}</p>
-          </div>
-
-          <div className="admin-post-modal__stats">
-            <span>
-              <FiDollarSign />
-              Rs. {pick.price}
-            </span>
-            <span>
-              <FiCalendar />
-              {formatDate(pick.startDate)}
-              {pick.endDate ? ` - ${formatDate(pick.endDate)}` : ""}
-            </span>
-            {!pick.isPublished && <span>Hidden</span>}
-          </div>
-
-          <div className="admin-travel-pick-details">
-            {pick.placesToVisit && pick.placesToVisit.length > 0 && (
-              <div className="admin-travel-pick-section">
-                <h4>Places to Visit</h4>
-                <div className="admin-travel-pick-tags">
-                  {pick.placesToVisit.map((placeItem) => (
-                    <span key={placeItem}>{placeItem}</span>
-                  ))}
-                </div>
+                <button type="button" onClick={() => setShowMenu(false)}>
+                  Cancel
+                </button>
               </div>
             )}
+          </div>
 
-            <div className="admin-travel-pick-section">
-              <h4>Trip Includes</h4>
-              <div className="admin-travel-pick-info-grid">
-                <div>
-                  <strong>Accommodation</strong>
-                  <p>{pick.accommodation || "Not added"}</p>
-                </div>
-                <div>
-                  <strong>Meals</strong>
-                  <p>{pick.meals || "Not added"}</p>
-                </div>
-                <div>
-                  <strong>Transportation</strong>
-                  <p>{pick.transportation || "Not added"}</p>
-                </div>
-                <div>
-                  <strong>Tour Guide</strong>
-                  <p>{pick.tourGuide || "Not added"}</p>
-                </div>
-              </div>
-            </div>
+          <button
+            type="button"
+            className="admin-modal-top-btn"
+            onClick={onClose}
+          >
+            <FiX />
+          </button>
+        </div>
 
-            <div className="admin-travel-pick-section">
-              <h4>Payment</h4>
-              <div className="admin-travel-pick-info-grid">
-                <div>
-                  <strong>Payment Info</strong>
-                  <p>{pick.paymentInfo || "Not added"}</p>
-                </div>
-                <div>
-                  <strong>Advance Policy</strong>
-                  <p>{pick.advancePolicy || "Not added"}</p>
-                </div>
-                <div>
-                  <strong>Advance Percentage</strong>
-                  <p>
-                    {pick.advancePercentage !== undefined &&
-                    pick.advancePercentage !== null
-                      ? `${pick.advancePercentage}%`
-                      : "Not added"}
-                  </p>
-                </div>
-                <div>
-                  <strong>Refund Policy</strong>
-                  <p>{pick.refundPolicy || "Not added"}</p>
-                </div>
-              </div>
-            </div>
+        <div className="admin-post-modal__image">
+          <img src={getImageSrc(place.imageUrl)} alt={place.placeName} />
+        </div>
 
-            <div className="admin-travel-pick-section">
-              <h4>More Details</h4>
-              <p>{pick.moreDetails || "No extra details added yet."}</p>
-            </div>
-
-            <div className="admin-travel-pick-section">
-              <h4>Cancellation Policy</h4>
-              <p>{pick.cancellationPolicy || "Not added"}</p>
+        <div className="admin-post-modal__content admin-post-modal__content--places">
+          <div className="admin-post-modal__header">
+            <div>
+              <h3>{place.placeName}</h3>
+              <p>
+                <FiMapPin />
+                {place.location}
+              </p>
             </div>
           </div>
+
+          <div className="admin-post-modal__caption admin-post-modal__caption--plain">
+            <p>{place.caption}</p>
+
+            {!!place.moodTags?.length && (
+              <div className="admin-post-modal__tags">
+                {place.moodTags.map((tag) => (
+                  <span key={tag}>#{tag}</span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="admin-post-modal__stats admin-post-modal__stats--clean">
+            <span>
+              <FiHeart />
+              {place.likesCount || 0}
+            </span>
+
+            <span>
+              <FiMessageCircle />
+              {place.commentsCount || 0}
+            </span>
+
+            <span>
+              <FiBookmark />
+              {place.savesCount || 0}
+            </span>
+
+            {!place.isPublished && (
+              <span className="admin-post-hidden-badge">Hidden</span>
+            )}
+          </div>
+
+          <div className="admin-post-date">{formatPostDate(place.createdAt)}</div>
+
+          <div className="admin-post-comments admin-post-comments--plain">
+            {rootComments.map((comment) => (
+              <div key={comment._id} className="admin-comment-block">
+                <div className="admin-comment-block__main">
+                  <div>
+                    <strong>{comment.user?.username || "user"}</strong>
+                    <p>{comment.text}</p>
+                  </div>
+
+                  <div className="admin-comment-block__actions">
+                    <button
+                      type="button"
+                      onClick={() => setReplyTo(comment._id)}
+                    >
+                      Reply
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteComment(comment._id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+
+                {childReplies(comment._id).map((reply) => (
+                  <div key={reply._id} className="admin-comment-reply">
+                    <strong>{reply.user?.username || "admin"}</strong>
+                    <p>{reply.text}</p>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          {replyTo && (
+            <div className="admin-post-reply-box">
+              <input
+                type="text"
+                placeholder="Write a reply..."
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+              />
+
+              <button type="button" onClick={handleReply}>
+                Reply
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,35 +1,51 @@
 export default function AboutSection() {
   return (
-    <section id="about" className="section section-soft">
+    <section id="about" className="about-reference-section">
       <div className="container">
-        <div className="section-heading fade-up">
-          <h2>About Us</h2>
-          <p>
-            This platform is built to make travel more personal, and inspiring,
-            and easier to plan. It helps users discover journeys based on mood,
-            interest, and social travel experiences.
-          </p>
-        </div>
-
-        <div className="about-grid">
-          <div className="about-card fade-up">
-            <h3>Mood-Based Travel</h3>
-            <p>Get travel ideas that fit your feelings and preferences.</p>
+        <div className="about-reference">
+          <div className="about-reference__heading">
+            <h2>About Us</h2>
           </div>
 
-          <div className="about-card fade-up delay-1">
-            <h3>AI Trip Planner</h3>
-            <p>Build itineraries with less stress and more direction.</p>
+          <div className="about-reference__image fade-up">
+            <img src="/images/about-travel.jpeg" alt="Travel experience" />
           </div>
 
-          <div className="about-card fade-up delay-2">
-            <h3>Travel Diaries</h3>
-            <p>Discover real travel moments shared by users.</p>
+          <div className="about-reference__main-card fade-up delay-1">
+            <h3>Travel That Feels Personal</h3>
+            <p>
+              Our platform is built for people who want travel to feel easier,
+              more meaningful, and more connected to how they actually feel.
+              From mood-based recommendations to AI-generated itineraries and
+              social travel experiences, we help users discover trips that match
+              their energy instead of forcing them into stressful planning.
+            </p>
           </div>
 
-          <div className="about-card fade-up delay-3">
-            <h3>Explore Places</h3>
-            <p>See curated admin posts and destination inspiration.</p>
+          <div className="about-reference__cards">
+            <div className="about-reference__small-card fade-up">
+              <h4>Mood-Based Travel</h4>
+              <p>
+                Discover trips that match your emotions, energy, and travel mood.
+              </p>
+              {/* <button type="button">Learn More</button> */}
+            </div>
+
+            <div className="about-reference__small-card fade-up delay-1">
+              <h4>AI Itinerary Planner</h4>
+              <p>
+                Get smart travel plans without the stress of doing everything yourself.
+              </p>
+              <button type="button">Learn More</button>
+            </div>
+
+            <div className="about-reference__small-card fade-up delay-2">
+              <h4>Travel Together</h4>
+              <p>
+                Connect with like-minded travelers and enjoy safer shared experiences.
+              </p>
+              <button type="button">Learn More</button>
+            </div>
           </div>
         </div>
       </div>

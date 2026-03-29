@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import api from "@/lib/axios";
-import PlaceAdminModal from "@/components/admin/PlaceAdminModal";
+import PlaceAdminModal from "@/components/admin/ PlaceAdminModal";
 
 type NotificationItem = {
   _id: string;

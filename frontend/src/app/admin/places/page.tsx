@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/axios";
-import { FiHeart, FiMessageCircle } from "react-icons/fi";
-import PlaceAdminModal from "@/components/admin/PlaceAdminModal";
+import { FiHeart, FiMessageCircle, FiPlus } from "react-icons/fi";
+import PlaceAdminModal from "@/components/admin/ PlaceAdminModal";
+import AddPlaceModal, { AdminPlace } from "@/components/admin/AddPlaceModal";
 
 type PlaceComment = {
   _id: string;
@@ -26,6 +27,7 @@ type Place = {
   moodTags: string[];
   likesCount: number;
   commentsCount: number;
+  savesCount?: number;
   isPublished: boolean;
   comments: PlaceComment[];
   createdAt: string;
@@ -43,6 +45,7 @@ const getImageSrc = (imageUrl?: string) => {
 export default function AdminPlacesPage() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -91,6 +94,10 @@ export default function AdminPlacesPage() {
     setSelectedPlaceId(nextPlaces[fallbackIndex]?._id || null);
   };
 
+  const handlePlaceCreated = (newPlace: AdminPlace) => {
+    setPlaces((prev) => [newPlace as Place, ...prev]);
+  };
+
   if (loading) {
     return (
       <section className="admin-places-page">
@@ -111,6 +118,15 @@ export default function AdminPlacesPage() {
           <h1>Places Posts</h1>
           <p>Hover to see likes and comments. Click any post to manage it.</p>
         </div>
+
+        <button
+          type="button"
+          className="admin-page-add-btn"
+          onClick={() => setShowAddModal(true)}
+        >
+          <FiPlus />
+          Add Place
+        </button>
       </div>
 
       <div className="admin-place-grid">
@@ -122,6 +138,7 @@ export default function AdminPlacesPage() {
             onClick={() => setSelectedPlaceId(place._id)}
           >
             <img src={getImageSrc(place.imageUrl)} alt={place.placeName} />
+
             <div className="admin-place-grid__overlay">
               <div className="admin-place-grid__stats">
                 <span>
@@ -141,6 +158,13 @@ export default function AdminPlacesPage() {
           </button>
         ))}
       </div>
+
+      {showAddModal && (
+        <AddPlaceModal
+          onClose={() => setShowAddModal(false)}
+          onPlaceCreated={handlePlaceCreated}
+        />
+      )}
 
       {selectedPlace && (
         <PlaceAdminModal

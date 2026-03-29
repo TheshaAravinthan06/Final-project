@@ -13,7 +13,7 @@ type TravelPick = {
   startDate: string;
   endDate: string;
   caption: string;
-  isPublished: boolean;
+  isPublished?: boolean;
 };
 
 const BACKEND_URL =
