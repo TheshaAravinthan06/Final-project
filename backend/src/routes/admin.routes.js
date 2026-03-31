@@ -12,11 +12,13 @@ import {
   adminHidePlace,
   adminBlockUser,
 } from "../controllers/admin.controller.js";
+import { adminGlobalSearch } from "../controllers/search.controller.js";
 
 const router = express.Router();
 
 router.use(protect, authorize("admin"));
 router.get("/dashboard", adminDashboardStats);
+router.get("/search", adminGlobalSearch);
 
 router.get("/users", adminGetAllUsers);
 router.get("/users/:id", adminGetUserById);

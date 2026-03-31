@@ -445,18 +445,61 @@
 /* FLOATING AI */
 
 .floating-ai-chatbox {
-  background: linear-gradient(180deg, #18342d 0%, #10241f 100%);
-  border: 1px solid rgba(159, 199, 169, 0.14);
+  position: relative;
+  width: 290px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: fadeUp 0.5s ease;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  backdrop-filter: none !important;
 }
 
 .floating-ai-message {
-  color: #eef4ef;
+  background: #ffffff;
+  color: #1f2937;
+  padding: 16px 18px;
+  border-radius: 14px;
+  line-height: 1.6;
+  font-size: 15px;
+  border: 1px solid rgba(203, 213, 225, 0.75);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+}
+
+.floating-ai-message p {
+  margin: 0;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.floating-ai-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
 
 .floating-ai-suggestions button {
-  background: rgba(255, 255, 255, 0.08);
-  color: #eff5f0;
-  border: 1px solid rgba(159, 199, 169, 0.12);
+  background: #ffffff;
+  color: #5e9f7c;
+  border: 1px solid rgba(94, 159, 124, 0.35);
+  border-radius: 14px;
+  padding: 12px 14px;
+  text-align: left;
+  transition: 0.25s ease;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+
+  &:hover {
+    transform: translateY(-2px);
+    background: #f7fffa;
+    border-color: rgba(94, 159, 124, 0.55);
+  }
 }
 
 .floating-ai-btn {

@@ -1,18 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/axios";
 import FeedPostCard from "@/components/home/FeedPostCard";
 import ExplorePlacesCard from "@/components/home/ExplorePlacesCard";
 import RightPanel from "@/components/home/RightPanel";
+import BlogPreview from "@/components/blog/BlogPreview";
 
-type PlaceComment = {
+type Post = {
   _id: string;
-  text: string;
+  imageUrl: string;
+  caption: string;
+  location?: string;
   createdAt: string;
-  user: {
+  likesCount: number;
+  commentsCount: number;
+  savesCount: number;
+  shareCount: number;
+  isLiked?: boolean;
+  isSaved?: boolean;
+  createdBy?: {
     _id: string;
     username: string;
+    name?: string;
+    profileImage?: string;
+  } | null;
+};
+
+type Blog = {
+  _id: string;
+  title: string;
+  coverImage: string;
+  excerpt?: string;
+  content: string;
+  location?: string;
+  createdAt: string;
+  author?: {
+    _id?: string;
+    username?: string;
+    profileImage?: string;
   } | null;
 };
 
@@ -28,81 +54,43 @@ type Place = {
   weather: string;
   vibe: string;
   travelTip: string;
-  createdBy?: {
-    username?: string;
-  };
   createdAt?: string;
-  likesCount?: number;
-  savesCount?: number;
-  commentsCount?: number;
-  shareCount?: number;
-  isLiked?: boolean;
-  isSaved?: boolean;
-  comments?: PlaceComment[];
 };
 
-type MockPost = {
-  id: number;
-  username: string;
-  handle: string;
-  avatar: string;
-  image: string;
-  caption: string;
-  likes: number;
-  comments: number;
-  shares: number;
-  saves: number;
-  time: string;
-};
-
-const mockPosts: MockPost[] = [
-  {
-    id: 1,
-    username: "nethmi_travels",
-    handle: "@nethmi",
-    avatar: "/images/ella.jpg",
-    image: "/images/mirissa.jpg",
-    caption: "Sunset moments and sea breeze. This trip felt like peace.",
-    likes: 214,
-    comments: 18,
-    shares: 7,
-    saves: 16,
-    time: "2h",
-  },
-  {
-    id: 2,
-    username: "sajee_journey",
-    handle: "@sajee",
-    avatar: "/images/sigiriya.jpg",
-    image: "/images/ella.jpg",
-    caption: "Morning train rides, mountain air, and the best calm vibe.",
-    likes: 172,
-    comments: 11,
-    shares: 4,
-    saves: 9,
-    time: "5h",
-  },
-  {
-    id: 3,
-    username: "vibe_with_anu",
-    handle: "@anu",
-    avatar: "/images/mirissa.jpg",
-    image: "/images/nuwareliya.jpg",
-    caption: "Cold weather, tea lands, and memories with new people.",
-    likes: 296,
-    comments: 23,
-    shares: 8,
-    saves: 19,
-    time: "8h",
-  },
-];
+type FeedItem =
+  | (Post & { type: "post" })
+  | (Blog & { type: "blog" });
 
 export default function HomePage() {
-  const [activeFeed, setActiveFeed] = useState<"travel-diaries" | "explore-places">(
-    "travel-diaries"
-  );
+  const [activeFeed, setActiveFeed] = useState<
+    "travel-diaries" | "explore-places"
+  >("travel-diaries");
+
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [blogs, setBlogs] = useState<Blog[]>([]);
   const [places, setPlaces] = useState<Place[]>([]);
+  const [loadingFeed, setLoadingFeed] = useState(true);
   const [loadingPlaces, setLoadingPlaces] = useState(true);
+
+  useEffect(() => {
+    const fetchFeed = async () => {
+      try {
+        const [postRes, blogRes] = await Promise.all([
+          api.get("/user-posts"),
+          api.get("/blogs"),
+        ]);
+
+        setPosts(postRes.data.posts || []);
+        setBlogs(blogRes.data.blogs || []);
+      } catch (err) {
+        console.error("Feed fetch error:", err);
+      } finally {
+        setLoadingFeed(false);
+      }
+    };
+
+    fetchFeed();
+  }, []);
 
   useEffect(() => {
     const fetchPlaces = async () => {
@@ -111,7 +99,7 @@ export default function HomePage() {
 
         const placesData = Array.isArray(res.data)
           ? res.data
-          : res.data?.places || res.data?.data || res.data?.allPlaces || [];
+          : res.data?.places || res.data?.data || [];
 
         setPlaces(placesData);
       } catch (error) {
@@ -123,6 +111,16 @@ export default function HomePage() {
 
     fetchPlaces();
   }, []);
+
+  const combinedFeed = useMemo<FeedItem[]>(() => {
+    return [
+      ...posts.map((p) => ({ ...p, type: "post" as const })),
+      ...blogs.map((b) => ({ ...b, type: "blog" as const })),
+    ].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [posts, blogs]);
 
   const updatePlaceInState = (updatedPlace: Place) => {
     setPlaces((prev) =>
@@ -163,20 +161,39 @@ export default function HomePage() {
               </h2>
               <p>
                 {activeFeed === "travel-diaries"
-                  ? "See travel moments shared by users."
+                  ? "See travel posts and blogs shared by users."
                   : "Discover places posted by admin."}
               </p>
             </div>
           </div>
 
           <div className="feed-list">
+            {activeFeed === "travel-diaries" && loadingFeed && (
+              <div className="feed-loading-card">Loading feed...</div>
+            )}
+
             {activeFeed === "travel-diaries" &&
-              mockPosts.map((post) => (
-                <FeedPostCard key={post.id} post={post} />
-              ))}
+              !loadingFeed &&
+              combinedFeed.length === 0 && (
+                <div className="feed-loading-card">
+                  No travel diaries found yet.
+                </div>
+              )}
+
+            {activeFeed === "travel-diaries" &&
+              !loadingFeed &&
+              combinedFeed.map((item) => {
+                if (item.type === "post") {
+                  return <FeedPostCard key={item._id} post={item} />;
+                }
+
+                return <BlogPreview key={item._id} blog={item} />;
+              })}
 
             {activeFeed === "explore-places" && loadingPlaces && (
-              <div className="feed-loading-card">Loading explore places...</div>
+              <div className="feed-loading-card">
+                Loading explore places...
+              </div>
             )}
 
             {activeFeed === "explore-places" &&

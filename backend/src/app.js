@@ -15,6 +15,11 @@ import itineraryRoutes from "./routes/itinerary.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import userPostRoutes from "./routes/userPost.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
+import searchRoutes from "./routes/search.routes.js";
+import blogRoutes from "./routes/userBlog.routes.js";
+
+
 
 const app = express();
 
@@ -66,5 +71,8 @@ app.use("/itineraries", itineraryRoutes);
 app.use("/users", userRoutes);
 app.use("/user-posts", userPostRoutes);
 app.use("/ai", aiRoutes);
+app.use("/notifications", notificationRoutes);
+app.use("/search", searchRoutes);
+app.use("/blogs", blogRoutes);
 
 export default app;

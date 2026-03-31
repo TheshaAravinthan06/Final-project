@@ -10,6 +10,7 @@ import Footer from "../components/landing/Footer";
 import AuthModal from "../components/landing/AuthModal";
 import FloatingAI from "../components/landing/FloatingAI";
 
+
 export default function HomePage() {
   const [modalType, setModalType] = useState<"login" | "register" | null>(null);
 

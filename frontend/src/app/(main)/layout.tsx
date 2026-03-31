@@ -4,6 +4,7 @@ import { useState } from "react";
 import Sidebar from "@/components/home/Sidebar";
 import SearchOverlay from "@/components/search/SearchOverlay";
 import NotificationsOverlay from "@/components/notifications/NotificationsOverlay";
+import GlobalAIWidget from "@/components/ai/GlobalAIWidget";
 
 export default function MainLayout({
   children,
@@ -46,6 +47,8 @@ export default function MainLayout({
         isOpen={isNotificationsOpen}
         onClose={closeOverlays}
       />
+
+      <GlobalAIWidget />
     </div>
   );
 }

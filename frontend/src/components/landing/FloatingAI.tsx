@@ -23,13 +23,25 @@ export default function FloatingAI({ onOpenLogin }: FloatingAIProps) {
           </button>
 
           <div className="floating-ai-message">
-            Welcome to Trip AI! Planning a trip? How can I assist you today?
+            <span className="floating-ai-message-label">Trip AI</span>
+            <p>
+              Welcome to Trip AI! Planning a trip? <br />
+              How can I assist you today?
+            </p>
           </div>
 
           <div className="floating-ai-suggestions">
-            <button onClick={onOpenLogin}>Can you help me plan a trip?</button>
-            <button onClick={onOpenLogin}>Show me travel packages</button>
-            <button onClick={onOpenLogin}>Tell me about Sri Lanka tours</button>
+            <button type="button" onClick={onOpenLogin}>
+              Can you help me plan a trip?
+            </button>
+
+            <button type="button" onClick={onOpenLogin}>
+              Show me travel packages
+            </button>
+
+            <button type="button" onClick={onOpenLogin}>
+              Tell me about Sri Lanka tours
+            </button>
           </div>
         </div>
       )}

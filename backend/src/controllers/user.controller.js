@@ -3,6 +3,7 @@ import User from "../models/user.models.js";
 import UserPost from "../models/userPost.models.js";
 import fs from "fs";
 import Review from "../models/review.models.js";
+import { createUserNotification } from "../utils/createUserNotification.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -190,6 +191,17 @@ export const followUser = async (req, res) => {
 
     await currentUser.save();
     await userToFollow.save();
+
+    await createUserNotification({
+      recipient: userToFollow._id,
+      actor: currentUser._id,
+      type: "follow",
+      title: "New follower",
+      message: `${currentUser.username} started following you`,
+      entityType: "user",
+      entityId: currentUser._id,
+      previewImage: currentUser.profileImage || "",
+    });
 
     const postsCount = await UserPost.countDocuments({
       createdBy: userToFollow._id,

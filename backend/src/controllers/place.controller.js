@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import Place from "../models/place.models.js";
 import PlaceReport from "../models/placeReport.models.js";
 import AdminNotification from "../models/adminNotification.models.js";
+import { createUserNotification } from "../utils/createUserNotification.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -454,6 +455,27 @@ export const addPlaceComment = async (req, res) => {
         actor: req.user._id,
         commentId: inserted._id,
       });
+    }
+
+    if (req.user.role === "admin" && replyTo) {
+      const repliedComment = place.comments.id(replyTo);
+
+      if (
+        repliedComment &&
+        repliedComment.user &&
+        String(repliedComment.user) !== String(req.user._id)
+      ) {
+        await createUserNotification({
+          recipient: repliedComment.user,
+          actor: req.user._id,
+          type: "reply",
+          title: "Admin replied to your comment",
+          message: `You got a reply on ${place.placeName}`,
+          entityType: "place",
+          entityId: place._id,
+          previewImage: place.imageUrl || "",
+        });
+      }
     }
 
     const updatedPlace = await Place.findById(id)

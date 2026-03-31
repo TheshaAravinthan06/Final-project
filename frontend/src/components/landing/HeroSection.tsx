@@ -15,9 +15,9 @@ export default function HeroSection({ onOpenRegister }: HeroSectionProps) {
       <div className="hero-overlay">
         <div className="container hero-grid">
           <div className="hero-left fade-up">
-            <div className="hero-badge">
+            {/* <div className="hero-badge">
               Mood-based journeys with AI and community
-            </div>
+            </div> */}
 
             <h1>Travel that feels like your mood, not just a booking</h1>
 
@@ -33,7 +33,7 @@ export default function HeroSection({ onOpenRegister }: HeroSectionProps) {
 
           <div className="hero-right fade-up delay-1">
             <div className="hero-why-card">
-              <span className="hero-why-label">Why choose Trip AI</span>
+              {/* <span className="hero-why-label">Why choose Trip AI</span> */}
 
               <h3>Why Choose Us?</h3>
 

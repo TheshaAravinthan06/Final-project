@@ -239,13 +239,33 @@ export const adminUpdateUserRole = async (req, res) => {
 
 export const adminGetNotifications = async (req, res) => {
   try {
-    const notifications = await AdminNotification.find()
-      .populate("actor", "username email")
+    const { unreadOnly, type, limit } = req.query;
+
+    const filter = {};
+
+    if (String(unreadOnly).toLowerCase() === "true") {
+      filter.isRead = false;
+    }
+
+    if (type && type !== "all") {
+      filter.type = type;
+    }
+
+    const parsedLimit = Number(limit) > 0 ? Number(limit) : 100;
+
+    const notifications = await AdminNotification.find(filter)
+      .populate("actor", "username email profileImage")
       .populate("place", "placeName imageUrl")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(parsedLimit);
+
+    const unreadCount = await AdminNotification.countDocuments({
+      isRead: false,
+    });
 
     return res.status(200).json({
       count: notifications.length,
+      unreadCount,
       notifications,
     });
   } catch (error) {

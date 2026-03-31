@@ -5,6 +5,76 @@
 @use "../styles/landing-overrides";
 @use "../styles/admin";
 
+/* FORCE HOW IT WORKS */
+
+#how-it-works {
+  padding: 80px 0;
+}
+
+#how-it-works .how-works-slider-wrap {
+  overflow-x: auto;
+}
+
+#how-it-works .how-works-slider {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  width: max-content;
+}
+
+#how-it-works .how-works-card {
+  width: 200px;
+  height: 280px;
+  flex: 0 0 200px;
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+  background: #ccc;
+}
+
+#how-it-works .how-works-card.is-active {
+  width: 240px;
+  height: 320px;
+}
+
+#how-it-works .how-works-card__image {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+
+#how-it-works .how-works-card__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+}
+
+#how-it-works .how-works-card__content {
+  position: absolute;
+  bottom: 0;
+  color: white;
+  padding: 15px;
+}
+
+#how-it-works .how-works-slider {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+#how-it-works .how-works-card {
+  width: 200px;
+  height: 280px;
+  transition: all 0.3s ease;
+  transform: scale(0.9);
+}
+
+#how-it-works .how-works-card.is-active {
+  transform: scale(1.1);
+  z-index: 2;
+}
+
 * {
   margin: 0;
   padding: 0;
