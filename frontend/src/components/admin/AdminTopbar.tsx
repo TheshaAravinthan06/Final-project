@@ -136,8 +136,8 @@ export default function AdminTopbar() {
 
   const displaySubText =
     admin?.role === "admin"
-      ? "Trip AI"
-      : admin?.email?.trim() || "Trip AI";
+      ? "PackPalz"
+      : admin?.email?.trim() || "PackPalz";
 
   const imageUrl = getImageUrl(admin?.profileImage);
   const fallbackLetter = displayName.charAt(0).toUpperCase();

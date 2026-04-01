@@ -310,7 +310,7 @@ export const adminGetReports = async (req, res) => {
   }
 };
 
-export const adminHidePlace = async (req, res) => {
+export const adminTogglePlaceVisibility = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -319,12 +319,37 @@ export const adminHidePlace = async (req, res) => {
       return res.status(404).json({ message: "Place not found" });
     }
 
-    place.isPublished = false;
+    place.isPublished = !place.isPublished;
     await place.save();
 
     return res.status(200).json({
-      message: "Place hidden from users",
+      message: place.isPublished
+        ? "Place is now visible to users"
+        : "Place hidden from users",
       place,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const adminToggleTravelPickVisibility = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const travelPick = await TravelPick.findById(id);
+    if (!travelPick) {
+      return res.status(404).json({ message: "Travel pick not found" });
+    }
+
+    travelPick.isPublished = !travelPick.isPublished;
+    await travelPick.save();
+
+    return res.status(200).json({
+      message: travelPick.isPublished
+        ? "Travel pick is now visible to users"
+        : "Travel pick hidden from users",
+      travelPick,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });

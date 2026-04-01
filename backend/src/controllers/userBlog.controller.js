@@ -9,6 +9,7 @@ const formatBlog = (blog) => ({
   location: blog.location || "",
   createdAt: blog.createdAt,
   updatedAt: blog.updatedAt,
+  isPublished: blog.isPublished !== false,
   likesCount: blog.likes?.length || 0,
   commentsCount: blog.comments?.length || 0,
   author: blog.author
@@ -30,6 +31,7 @@ export const createBlog = async (req, res) => {
       location: req.body.location,
       coverImage: req.file ? `/uploads/blogs/${req.file.filename}` : "",
       author: req.user._id,
+      isPublished: true,
     });
 
     const populatedBlog = await UserBlog.findById(newBlog._id).populate(
@@ -48,7 +50,7 @@ export const createBlog = async (req, res) => {
 
 export const getAllBlogs = async (req, res) => {
   try {
-    const blogs = await UserBlog.find()
+    const blogs = await UserBlog.find({ isPublished: { $ne: false } })
       .populate("author", "username name profileImage")
       .sort({ createdAt: -1 });
 
@@ -72,6 +74,10 @@ export const getBlogById = async (req, res) => {
       return res.status(404).json({ message: "Blog not found" });
     }
 
+    if (blog.isPublished === false) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
     res.status(200).json({ blog: formatBlog(blog) });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -82,7 +88,10 @@ export const getBlogsByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const blogs = await UserBlog.find({ author: userId })
+    const blogs = await UserBlog.find({
+      author: userId,
+      isPublished: { $ne: false },
+    })
       .populate("author", "username name profileImage")
       .sort({ createdAt: -1 });
 
@@ -127,6 +136,41 @@ export const updateBlog = async (req, res) => {
       message: "Blog updated successfully",
       blog: formatBlog(updatedBlog),
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const hideBlog = async (req, res) => {
+  try {
+    const blog = await UserBlog.findById(req.params.id);
+
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    if (blog.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    blog.isPublished = false;
+    await blog.save();
+
+    res.status(200).json({ message: "Blog hidden successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const reportBlog = async (req, res) => {
+  try {
+    const blog = await UserBlog.findById(req.params.id);
+
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    res.status(200).json({ message: "Blog reported successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

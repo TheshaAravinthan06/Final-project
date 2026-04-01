@@ -23,9 +23,9 @@ export default function FloatingAI({ onOpenLogin }: FloatingAIProps) {
           </button>
 
           <div className="floating-ai-message">
-            <span className="floating-ai-message-label">Trip AI</span>
+            <span className="floating-ai-message-label">PackPalz</span>
             <p>
-              Welcome to Trip AI! Planning a trip? <br />
+              Welcome to PackPalz! Planning a trip? <br />
               How can I assist you today?
             </p>
           </div>
@@ -53,7 +53,7 @@ export default function FloatingAI({ onOpenLogin }: FloatingAIProps) {
           type="button"
           className="floating-ai-btn"
           onClick={isOpen ? onOpenLogin : () => setIsOpen(true)}
-          aria-label="Open Trip AI"
+          aria-label="Open PackPalz"
         >
           <span className="floating-ai-chat-icon">💬</span>
           <span className="floating-ai-notification">1</span>

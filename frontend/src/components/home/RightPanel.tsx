@@ -61,7 +61,7 @@ export default function RightPanel() {
 
       <div className="right-footer">
         <p>About · Help · Privacy · Terms</p>
-        <p>Trip AI © 2026</p>
+        <p>PackPalz © 2026</p>
       </div>
     </aside>
   );

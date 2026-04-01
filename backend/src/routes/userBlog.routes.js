@@ -5,6 +5,8 @@ import {
   getBlogById,
   getBlogsByUserId,
   updateBlog,
+  hideBlog,
+  reportBlog,
   deleteBlog,
 } from "../controllers/userBlog.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
@@ -17,6 +19,8 @@ router.get("/", getAllBlogs);
 router.get("/user/:userId", getBlogsByUserId);
 router.get("/:id", getBlogById);
 router.put("/:id", protect, uploadBlogImage.single("coverImage"), updateBlog);
+router.patch("/:id/hide", protect, hideBlog);
+router.post("/:id/report", protect, reportBlog);
 router.delete("/:id", protect, deleteBlog);
 
 export default router;

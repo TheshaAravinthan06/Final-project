@@ -15,7 +15,7 @@ export default function Navbar({
         <div className="logo-area">
           <div className="logo-icon">✦</div>
           <div>
-            <h2 className="logo-title">Trip AI</h2>
+            <h2 className="logo-title">PackPalz</h2>
             <p className="logo-sub">Travel with meaning</p>
           </div>
         </div>

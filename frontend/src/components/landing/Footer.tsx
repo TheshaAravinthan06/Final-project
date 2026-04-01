@@ -8,7 +8,7 @@ export default function Footer() {
           <div className="footer-logo-box">
             <div className="logo-icon">✦</div>
             <div>
-              <h3>Trip AI</h3>
+              <h3>PackPalz</h3>
               <p>
                 Your gateway to unforgettable journeys with AI-powered planning
                 and social travel inspiration.
@@ -35,13 +35,13 @@ export default function Footer() {
         <div className="footer-contact">
           <h4>Get in Touch</h4>
           <p>Northern Sri Lanka</p>
-          <p>+94 77 000 0000</p>
-          <p>hello@tripai.com</p>
+          <p>+94 77 123 4567</p>
+          <p>packpalz@gmail.com</p>
         </div>
       </div>
 
       <div className="container footer-bottom">
-        <p>© 2026 Trip AI. All rights reserved.</p>
+        <p>© 2026 PackPalz. All rights reserved.</p>
         <div className="footer-bottom-links">
           <span>Privacy Policy</span>
           <span>Terms & Conditions</span>

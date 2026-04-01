@@ -88,7 +88,7 @@ export default function Sidebar({
         <div className="trip-sidebar__top">
           <Link href="/home" className="trip-logo">
             <span className="trip-logo__icon">△</span>
-            <span className="trip-logo__text">Trip AI</span>
+            <span className="trip-logo__text">PackPalz</span>
           </Link>
 
           <nav className="trip-nav">

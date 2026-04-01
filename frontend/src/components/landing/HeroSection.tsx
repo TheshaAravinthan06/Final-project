@@ -23,7 +23,7 @@ export default function HeroSection({ onOpenRegister }: HeroSectionProps) {
 
             <p>
               Discover places, create mood-matching itineraries, join meaningful
-              trips, and enjoy a more beautiful way to plan travel with Trip AI.
+              trips, and enjoy a more beautiful way to plan travel with PackPalz.
             </p>
 
             <button className="hero-cta-btn" onClick={onOpenRegister}>
@@ -33,7 +33,7 @@ export default function HeroSection({ onOpenRegister }: HeroSectionProps) {
 
           <div className="hero-right fade-up delay-1">
             <div className="hero-why-card">
-              {/* <span className="hero-why-label">Why choose Trip AI</span> */}
+              {/* <span className="hero-why-label">Why choose PackPalz</span> */}
 
               <h3>Why Choose Us?</h3>
 

@@ -1,17 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/axios";
-import {
-  FiEdit2,
-  FiGrid,
-  FiMapPin,
-  FiSettings,
-  FiShare2,
-  FiStar,
-  FiUser,
-} from "react-icons/fi";
+import { FiGrid, FiMapPin, FiStar, FiUser } from "react-icons/fi";
 import ProfilePostGrid from "@/components/profile/ProfilePostGrid";
 import ProfileReviews from "@/components/profile/ProfileReviews";
 import ProfileTravelHistory from "@/components/profile/ProfileTravelHistory";
@@ -29,7 +20,7 @@ import {
   UserProfilePost,
 } from "@/components/profile/types";
 
-export default function ProfilePage() {
+export default function MyProfilePage() {
   const [profile, setProfile] = useState<ProfileUser | null>(null);
   const [posts, setPosts] = useState<ProfileGridItem[]>([]);
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
@@ -37,65 +28,73 @@ export default function ProfilePage() {
     "posts"
   );
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const loadProfileData = async () => {
+    const loadMyProfile = async () => {
       try {
         setLoading(true);
+        setError("");
+        setMessage("");
 
         const profileRes = await api.get("/users/me");
-        const currentProfile = profileRes.data?.user;
-        setProfile(currentProfile);
+        const myUser = profileRes.data?.user || null;
+        setProfile(myUser);
 
-        if (currentProfile?._id) {
-          const [postsRes, blogsRes, reviewsRes] = await Promise.allSettled([
-            api.get(`/user-posts/user/${currentProfile._id}`),
-            api.get(`/blogs/user/${currentProfile._id}`),
-            api.get(`/users/${currentProfile._id}/reviews`),
-          ]);
-
-          const userPosts: ProfileGridItem[] =
-            postsRes.status === "fulfilled"
-              ? (postsRes.value.data?.posts || []).map(
-                  (post: UserProfilePost) => ({
-                    ...post,
-                    type: "post" as const,
-                  })
-                )
-              : [];
-
-          const userBlogs: ProfileGridItem[] =
-            blogsRes.status === "fulfilled"
-              ? (blogsRes.value.data?.blogs || []).map(
-                  (blog: UserProfileBlog) => ({
-                    ...blog,
-                    type: "blog" as const,
-                  })
-                )
-              : [];
-
-          const mergedItems = [...userPosts, ...userBlogs].sort((a, b) => {
-            const aDate = new Date(a.createdAt || 0).getTime();
-            const bDate = new Date(b.createdAt || 0).getTime();
-            return bDate - aDate;
-          });
-
-          setPosts(mergedItems);
-
-          if (reviewsRes.status === "fulfilled") {
-            setReviews(reviewsRes.value.data?.reviews || []);
-          }
+        if (!myUser?._id) {
+          setLoading(false);
+          return;
         }
-      } catch (error) {
-        console.error("Failed to load profile", error);
+
+        const [postsRes, blogsRes, reviewsRes] = await Promise.allSettled([
+          api.get(`/user-posts/user/${myUser._id}`),
+          api.get(`/blogs/user/${myUser._id}`),
+          api.get(`/users/${myUser._id}/reviews`),
+        ]);
+
+        const userPosts: ProfileGridItem[] =
+          postsRes.status === "fulfilled"
+            ? (postsRes.value.data?.posts || []).map(
+                (post: UserProfilePost) => ({
+                  ...post,
+                  type: "post" as const,
+                })
+              )
+            : [];
+
+        const userBlogs: ProfileGridItem[] =
+          blogsRes.status === "fulfilled"
+            ? (blogsRes.value.data?.blogs || []).map(
+                (blog: UserProfileBlog) => ({
+                  ...blog,
+                  type: "blog" as const,
+                })
+              )
+            : [];
+
+        const mergedItems = [...userPosts, ...userBlogs].sort((a, b) => {
+          const aDate = new Date(a.createdAt || 0).getTime();
+          const bDate = new Date(b.createdAt || 0).getTime();
+          return bDate - aDate;
+        });
+
+        setPosts(mergedItems);
+
+        if (reviewsRes.status === "fulfilled") {
+          setReviews(reviewsRes.value.data?.reviews || []);
+        }
+      } catch (err: any) {
+        setError(err?.response?.data?.message || "Failed to load profile.");
       } finally {
         setLoading(false);
       }
     };
 
-    loadProfileData();
+    loadMyProfile();
   }, []);
 
   const interestTags = useMemo(
@@ -129,6 +128,45 @@ export default function ProfilePage() {
     setSelectedIndex((selectedIndex + 1) % posts.length);
   };
 
+  const handleDeleteItem = async (item: ProfileGridItem) => {
+    try {
+      setError("");
+      setMessage("");
+
+      if (item.type === "blog") {
+        await api.delete(`/blogs/${item._id}`);
+        setPosts((prev) =>
+          prev.filter((p) => !(p._id === item._id && p.type === item.type))
+        );
+        setMessage("Blog deleted successfully.");
+      } else {
+        setError("Post delete endpoint is not available yet in backend.");
+      }
+
+      handleCloseModal();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to delete item.");
+    }
+  };
+
+  const handleHideItem = async (item: ProfileGridItem) => {
+    try {
+      setError("");
+      setMessage("");
+
+      if (item.type === "blog") {
+        await api.patch(`/blogs/${item._id}/hide`);
+        setMessage("Blog hidden successfully.");
+      } else {
+        setError("Post hide endpoint is not available yet in backend.");
+      }
+
+      handleCloseModal();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to hide item.");
+    }
+  };
+
   if (loading) {
     return <div className="profile-loading-shell">Loading profile...</div>;
   }
@@ -140,24 +178,12 @@ export default function ProfilePage() {
   return (
     <section className="profile-clean-page">
       <div className="profile-clean-shell">
-        <div className="profile-clean-topbar">
-          <h1>My Profile</h1>
-
-          <Link
-            href="/settings"
-            className="profile-clean-icon-btn"
-            aria-label="Open settings"
-          >
-            <FiSettings />
-          </Link>
-        </div>
-
         <div className="profile-clean-header">
           <div className="profile-clean-avatar">
             {profile.profileImage ? (
               <img
                 src={getImageSrc(profile.profileImage)}
-                alt={profile.name || profile.username}
+                alt={profile.name || profile.username || "Profile"}
               />
             ) : (
               <div className="profile-clean-avatar__fallback">
@@ -169,25 +195,8 @@ export default function ProfilePage() {
           <div className="profile-clean-main">
             <div className="profile-clean-main__head">
               <div>
-                <h1>{profile.username}</h1>
-                <p className="profile-handle">
-                  @{profile.name || profile.username}
-                </p>
-              </div>
-
-              <div className="profile-clean-actions">
-                <Link
-                  href="/settings?tab=edit-profile"
-                  className="profile-clean-primary-btn"
-                >
-                  <FiEdit2 />
-                  Edit Profile
-                </Link>
-
-                <button type="button" className="profile-clean-secondary-btn">
-                  <FiShare2 />
-                  Share
-                </button>
+                <h2>{profile.name || profile.username}</h2>
+                <p>@{profile.username}</p>
               </div>
             </div>
 
@@ -203,24 +212,36 @@ export default function ProfilePage() {
               </span>
             </div>
 
-            {(profile.bio || profile.location || interestTags.length > 0) && (
-              <div className="profile-clean-meta">
-                {profile.bio && <p className="profile-clean-bio">{profile.bio}</p>}
+            <div className="profile-clean-meta">
+              {profile.bio && <p className="profile-clean-bio">{profile.bio}</p>}
 
-                {!!interestTags.length && (
-                  <div className="profile-clean-tags">
-                    {interestTags.map((tag) => (
-                      <span key={tag}>{tag}</span>
-                    ))}
-                  </div>
-                )}
+              {!!interestTags.length && (
+                <div className="profile-clean-tags">
+                  {interestTags.map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
+                </div>
+              )}
 
-                {profile.location && (
-                  <div className="profile-clean-location">
-                    <FiMapPin />
-                    <span>{profile.location}</span>
-                  </div>
-                )}
+              {profile.location && (
+                <div className="profile-clean-location">
+                  <FiMapPin />
+                  <span>{profile.location}</span>
+                </div>
+              )}
+
+              {profile.work && (
+                <div className="profile-clean-tags">
+                  <span>{profile.work}</span>
+                </div>
+              )}
+            </div>
+
+            {(message || error) && (
+              <div
+                className={`profile-clean-alert ${error ? "error" : "success"}`}
+              >
+                {error || message}
               </div>
             )}
           </div>
@@ -259,8 +280,8 @@ export default function ProfilePage() {
           {activeTab === "posts" && (
             <ProfilePostGrid
               posts={posts}
-              emptyText="You have not posted any travel memories yet."
               onOpenItem={handleOpenItem}
+              emptyText="No posts shared yet."
             />
           )}
 
@@ -273,23 +294,21 @@ export default function ProfilePage() {
               location={profile.location}
               interests={interestTags}
               work={profile.work}
-              isOwnProfile
             />
           )}
         </div>
       </div>
 
-    <ProfileGridModal
-  open={isModalOpen}
-  item={selectedIndex !== null ? posts[selectedIndex] : null}
-  onClose={handleCloseModal}
-  onPrev={handlePrevItem}
-  onNext={handleNextItem}
-  isOwnProfile
-  onEdit={(item) => console.log("edit", item)}
-  onHide={(item) => console.log("hide", item)}
-  onDelete={(item) => console.log("delete", item)}
-/>
+      <ProfileGridModal
+        open={isModalOpen}
+        item={selectedIndex !== null ? posts[selectedIndex] : null}
+        onClose={handleCloseModal}
+        onPrev={handlePrevItem}
+        onNext={handleNextItem}
+        isOwnProfile
+        onHide={handleHideItem}
+        onDelete={handleDeleteItem}
+      />
     </section>
   );
 }

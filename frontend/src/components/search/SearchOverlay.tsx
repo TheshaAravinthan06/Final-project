@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FiSearch, FiX, FiMapPin } from "react-icons/fi";
+import { FiSearch, FiX } from "react-icons/fi";
+import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
 
 type SearchOverlayProps = {
@@ -14,11 +15,6 @@ type SearchUser = {
   username: string;
   name: string;
   profileImage: string;
-  bio: string;
-  location: string;
-  work: string;
-  followersCount: number;
-  followingCount: number;
 };
 
 const getImageUrl = (path?: string) => {
@@ -32,6 +28,8 @@ export default function SearchOverlay({
   isOpen,
   onClose,
 }: SearchOverlayProps) {
+  const router = useRouter();
+
   const [query, setQuery] = useState("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [users, setUsers] = useState<SearchUser[]>([]);
@@ -72,10 +70,11 @@ export default function SearchOverlay({
         setUsers(res.data.users || []);
       } catch (error) {
         console.error("Search failed:", error);
+        setUsers([]);
       } finally {
         setLoading(false);
       }
-    }, 350);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [query, isOpen]);
@@ -90,14 +89,21 @@ export default function SearchOverlay({
   };
 
   const clearAll = () => setRecentSearches([]);
+
   const removeRecent = (value: string) => {
     setRecentSearches((prev) => prev.filter((item) => item !== value));
   };
 
+  const handleUserClick = (user: SearchUser) => {
+    addRecent(user.username || query);
+    onClose();
+    router.push(`/user/${user._id}`);
+  };
+
   const emptyState = useMemo(() => {
-    if (!query.trim()) return "Search travelers by username, bio, location...";
+    if (!query.trim()) return "Search profiles";
     if (loading) return "Searching...";
-    if (!users.length) return "No matching users found.";
+    if (!users.length) return "No results found";
     return "";
   }, [query, loading, users.length]);
 
@@ -125,17 +131,12 @@ export default function SearchOverlay({
 
           <div className="search-overlay-input">
             <FiSearch className="search-overlay-input__icon" />
-
             <input
               type="text"
-              placeholder="Search users, moods, locations..."
+              placeholder="Search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") addRecent(query);
-              }}
             />
-
             {query && (
               <button
                 type="button"
@@ -194,11 +195,11 @@ export default function SearchOverlay({
               )}
             </>
           ) : (
-            <div className="search-overlay-results">
+            <div className="search-overlay-results insta-search-results">
               {loading && <div className="search-overlay-empty">Searching...</div>}
 
               {!loading && users.length === 0 && (
-                <div className="search-overlay-empty">No matching users found.</div>
+                <div className="search-overlay-empty">No results found</div>
               )}
 
               {!loading &&
@@ -206,32 +207,30 @@ export default function SearchOverlay({
                   <button
                     key={user._id}
                     type="button"
-                    className="search-result-card"
-                    onClick={() => addRecent(query)}
+                    className="insta-search-item"
+                    onClick={() => handleUserClick(user)}
                   >
-                    <div className="search-result-card__left">
+                    <div className="insta-search-item__avatar-wrap">
                       {user.profileImage ? (
                         <img
                           src={getImageUrl(user.profileImage)}
                           alt={user.username}
-                          className="search-result-card__avatar"
+                          className="insta-search-item__avatar"
                         />
                       ) : (
-                        <div className="search-result-card__avatar search-result-card__avatar--fallback">
+                        <div className="insta-search-item__avatar insta-search-item__avatar--fallback">
                           {user.username?.charAt(0).toUpperCase()}
                         </div>
                       )}
                     </div>
 
-                    <div className="search-result-card__content">
-                      <h4>{user.username}</h4>
-                      {user.name && <p>{user.name}</p>}
-                      {user.bio && <span>{user.bio}</span>}
-                      {user.location && (
-                        <small>
-                          <FiMapPin /> {user.location}
-                        </small>
-                      )}
+                    <div className="insta-search-item__text">
+                      <div className="insta-search-item__username">
+                        {user.username}
+                      </div>
+                      <div className="insta-search-item__name">
+                        {user.name || user.username}
+                      </div>
                     </div>
                   </button>
                 ))}

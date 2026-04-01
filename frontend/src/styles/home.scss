@@ -1354,6 +1354,13 @@
   }
 }
 
+.search-result-card__match {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6f7b85;
+}
+
 @media (max-width: 640px) {
   .search-overlay-panel {
     width: 100%;

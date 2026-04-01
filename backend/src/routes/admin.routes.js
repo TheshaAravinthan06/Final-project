@@ -9,7 +9,8 @@ import {
   adminGetNotifications,
   adminMarkNotificationRead,
   adminGetReports,
-  adminHidePlace,
+  adminTogglePlaceVisibility,
+  adminToggleTravelPickVisibility,
   adminBlockUser,
 } from "../controllers/admin.controller.js";
 import { adminGlobalSearch } from "../controllers/search.controller.js";
@@ -17,18 +18,21 @@ import { adminGlobalSearch } from "../controllers/search.controller.js";
 const router = express.Router();
 
 router.use(protect, authorize("admin"));
+
 router.get("/dashboard", adminDashboardStats);
 router.get("/search", adminGlobalSearch);
 
 router.get("/users", adminGetAllUsers);
 router.get("/users/:id", adminGetUserById);
 router.patch("/users/:id/role", adminUpdateUserRole);
+router.patch("/users/:id/block", adminBlockUser);
 
 router.get("/notifications", adminGetNotifications);
 router.patch("/notifications/:id/read", adminMarkNotificationRead);
 
 router.get("/reports", adminGetReports);
-router.patch("/places/:id/hide", adminHidePlace);
-router.patch("/users/:id/block", adminBlockUser);
+
+router.patch("/places/:id/visibility", adminTogglePlaceVisibility);
+router.patch("/travel-picks/:id/visibility", adminToggleTravelPickVisibility);
 
 export default router;

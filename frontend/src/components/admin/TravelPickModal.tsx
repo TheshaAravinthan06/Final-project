@@ -1,54 +1,30 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import {
-  FiHeart,
-  FiMessageCircle,
-  FiBookmark,
-  FiMoreHorizontal,
-  FiMapPin,
-  FiX,
-  FiTrash2,
-  FiEyeOff,
-  FiEdit2,
   FiChevronLeft,
   FiChevronRight,
+  FiCopy,
+  FiEdit2,
+  FiEye,
+  FiEyeOff,
+  FiMapPin,
+  FiMoreHorizontal,
+  FiTrash2,
+  FiX,
 } from "react-icons/fi";
+import EditTravelPickModal, {
+  EditableTravelPick,
+} from "@/components/admin/EditTravelPickModal";
 
-type PlaceComment = {
-  _id: string;
-  text: string;
-  createdAt: string;
-  replyTo?: string | null;
-  isAdminReply?: boolean;
-  user: {
-    _id: string;
-    username: string;
-  } | null;
-};
-
-type Place = {
-  _id: string;
-  placeName: string;
-  location: string;
-  imageUrl: string;
-  caption: string;
-  moodTags: string[];
-  likesCount: number;
-  commentsCount: number;
-  savesCount?: number;
-  comments: PlaceComment[];
-  isPublished: boolean;
-  createdAt: string;
-};
+type TravelPick = EditableTravelPick;
 
 type Props = {
-  placeId: string;
+  pickId: string;
   onClose: () => void;
-  onPlaceUpdated: (updatedPlace: Place) => void;
-  onPlaceDeleted: (placeId: string) => void;
+  onTravelPickUpdated: (updatedPick: TravelPick) => void;
+  onTravelPickDeleted: (pickId: string) => void;
   onPrev?: () => void;
   onNext?: () => void;
 };
@@ -88,101 +64,94 @@ const formatPostDate = (dateString: string) => {
   });
 };
 
-export default function PlaceAdminModal({
-  placeId,
+const formatDate = (dateString?: string) => {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+export default function TravelPickModal({
+  pickId,
   onClose,
-  onPlaceUpdated,
-  onPlaceDeleted,
+  onTravelPickUpdated,
+  onTravelPickDeleted,
   onPrev,
   onNext,
 }: Props) {
-  const router = useRouter();
-  const [place, setPlace] = useState<Place | null>(null);
+  const [pick, setPick] = useState<TravelPick | null>(null);
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
-  const [replyText, setReplyText] = useState("");
-  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
-    const fetchPlace = async () => {
+    const fetchPick = async () => {
       try {
         setLoading(true);
-        const res = await api.get(`/places/admin/${placeId}`);
-        setPlace(res.data.place);
+        const res = await api.get(`/travel-picks/admin/${pickId}`);
+        setPick(res.data.travelPick);
       } catch (error) {
-        console.error("Failed to load place:", error);
+        console.error("Failed to load travel pick:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPlace();
-  }, [placeId]);
+    fetchPick();
+  }, [pickId]);
 
-  const rootComments = useMemo(() => {
-    return (place?.comments || []).filter((comment) => !comment.replyTo);
-  }, [place]);
-
-  const childReplies = (commentId: string) =>
-    (place?.comments || []).filter((comment) => comment.replyTo === commentId);
-
-  const syncPlace = (updatedPlace: Place) => {
-    setPlace(updatedPlace);
-    onPlaceUpdated(updatedPlace);
+  const syncPick = (updatedPick: TravelPick) => {
+    setPick(updatedPick);
+    onTravelPickUpdated(updatedPick);
   };
 
-  const handleReply = async () => {
-    if (!replyText.trim() || !replyTo) return;
-
+  const handleToggleVisibility = async () => {
     try {
-      const res = await api.post(`/places/${placeId}/comments`, {
-        text: replyText,
-        replyTo,
-      });
-
-      syncPlace(res.data.place);
-      setReplyText("");
-      setReplyTo(null);
-    } catch (error) {
-      console.error("Reply failed:", error);
-    }
-  };
-
-  const handleDeleteComment = async (commentId: string) => {
-    try {
-      const res = await api.delete(`/places/${placeId}/comments/${commentId}`);
-      syncPlace(res.data.place);
-    } catch (error) {
-      console.error("Delete comment failed:", error);
-    }
-  };
-
-  const handleHidePlace = async () => {
-    try {
-      const res = await api.patch(`/admin/places/${placeId}/hide`);
-      const updatedPlace = res.data.place || { ...place!, isPublished: false };
-      syncPlace(updatedPlace);
+      const res = await api.patch(`/admin/travel-picks/${pickId}/visibility`);
+      const updatedPick = res.data.travelPick || {
+        ...pick!,
+        isPublished: !pick?.isPublished,
+      };
+      syncPick(updatedPick);
       setShowMenu(false);
     } catch (error) {
-      console.error("Hide failed:", error);
+      console.error("Toggle visibility failed:", error);
     }
   };
 
-  const handleDeletePlace = async () => {
+  const handleCopyLink = async () => {
     try {
-      await api.delete(`/places/${placeId}`);
-      onPlaceDeleted(placeId);
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/admin/travel-picks?open=${pickId}`
+      );
+      setShowMenu(false);
+    } catch (error) {
+      console.error("Copy link failed:", error);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/travel-picks/${pickId}`);
+      onTravelPickDeleted(pickId);
       onClose();
     } catch (error) {
-      console.error("Delete place failed:", error);
+      console.error("Delete travel pick failed:", error);
     }
   };
 
-  const handleEditPlace = () => {
-    router.push(`/admin/places/edit/${placeId}`);
+  const handleEditOpen = () => {
+    setShowMenu(false);
+    setShowEditModal(true);
   };
 
-  if (loading || !place) {
+  const handlePickEdited = (updatedTravelPick: EditableTravelPick) => {
+    syncPick(updatedTravelPick);
+  };
+
+  if (loading || !pick) {
     return (
       <div className="admin-post-modal-backdrop" onClick={onClose}>
         <div
@@ -196,183 +165,244 @@ export default function PlaceAdminModal({
   }
 
   return (
-    <div className="admin-post-modal-backdrop" onClick={onClose}>
-      {onPrev && (
-        <button
-          type="button"
-          className="admin-modal-arrow admin-modal-arrow--left"
-          onClick={(e) => {
-            e.stopPropagation();
-            onPrev();
-          }}
-        >
-          <FiChevronLeft />
-        </button>
-      )}
+    <>
+      <div className="admin-post-modal-backdrop" onClick={onClose}>
+        {onPrev && (
+          <button
+            type="button"
+            className="admin-modal-arrow admin-modal-arrow--left"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPrev();
+            }}
+          >
+            <FiChevronLeft />
+          </button>
+        )}
 
-      {onNext && (
-        <button
-          type="button"
-          className="admin-modal-arrow admin-modal-arrow--right"
-          onClick={(e) => {
-            e.stopPropagation();
-            onNext();
-          }}
-        >
-          <FiChevronRight />
-        </button>
-      )}
+        {onNext && (
+          <button
+            type="button"
+            className="admin-modal-arrow admin-modal-arrow--right"
+            onClick={(e) => {
+              e.stopPropagation();
+              onNext();
+            }}
+          >
+            <FiChevronRight />
+          </button>
+        )}
 
-      <div className="admin-post-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="admin-post-modal__top-actions">
-          <div className="admin-post-modal__menu-wrap">
+        <div className="admin-post-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="admin-post-modal__top-actions">
+            <div className="admin-post-modal__menu-wrap">
+              <button
+                type="button"
+                className="admin-modal-top-btn"
+                onClick={() => setShowMenu((prev) => !prev)}
+              >
+                <FiMoreHorizontal />
+              </button>
+
+              {showMenu && (
+                <div className="admin-post-actions-menu">
+                  <button type="button" onClick={handleEditOpen}>
+                    <FiEdit2 />
+                    Edit
+                  </button>
+
+                  <button type="button" onClick={handleCopyLink}>
+                    <FiCopy />
+                    Copy link
+                  </button>
+
+                  <button type="button" onClick={handleToggleVisibility}>
+                    {pick.isPublished ? <FiEyeOff /> : <FiEye />}
+                    {pick.isPublished ? "Hide from users" : "Unhide from users"}
+                  </button>
+
+                  <button type="button" onClick={handleDelete} className="danger">
+                    <FiTrash2 />
+                    Delete
+                  </button>
+
+                  <button type="button" onClick={() => setShowMenu(false)}>
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+
             <button
               type="button"
               className="admin-modal-top-btn"
-              onClick={() => setShowMenu((prev) => !prev)}
+              onClick={onClose}
             >
-              <FiMoreHorizontal />
+              <FiX />
             </button>
-
-            {showMenu && (
-              <div className="admin-post-actions-menu">
-                <button type="button" onClick={handleEditPlace}>
-                  <FiEdit2 />
-                  Edit
-                </button>
-
-                <button type="button" onClick={handleHidePlace}>
-                  <FiEyeOff />
-                  Hide from users
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleDeletePlace}
-                  className="danger"
-                >
-                  <FiTrash2 />
-                  Delete
-                </button>
-
-                <button type="button" onClick={() => setShowMenu(false)}>
-                  Cancel
-                </button>
-              </div>
-            )}
           </div>
 
-          <button
-            type="button"
-            className="admin-modal-top-btn"
-            onClick={onClose}
-          >
-            <FiX />
-          </button>
-        </div>
+          <div className="admin-post-modal__image">
+            <img src={getImageSrc(pick.imageUrl)} alt={pick.title} />
+          </div>
 
-        <div className="admin-post-modal__image">
-          <img src={getImageSrc(place.imageUrl)} alt={place.placeName} />
-        </div>
-
-        <div className="admin-post-modal__content admin-post-modal__content--places">
-          <div className="admin-post-modal__header">
-            <div>
-              <h3>{place.placeName}</h3>
-              <p>
-                <FiMapPin />
-                {place.location}
-              </p>
+          <div className="admin-post-modal__content admin-post-modal__content--places">
+            <div className="admin-post-modal__header">
+              <div>
+                <h3>{pick.title}</h3>
+                <p>
+                  <FiMapPin />
+                  {pick.place}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="admin-post-modal__caption admin-post-modal__caption--plain">
-            <p>{place.caption}</p>
+            <div className="admin-post-modal__caption admin-post-modal__caption--plain">
+              <p>{pick.caption}</p>
+            </div>
 
-            {!!place.moodTags?.length && (
-              <div className="admin-post-modal__tags">
-                {place.moodTags.map((tag) => (
-                  <span key={tag}>#{tag}</span>
-                ))}
-              </div>
-            )}
-          </div>
+            <div className="admin-post-modal__stats admin-post-modal__stats--clean">
+              <span>Price: Rs. {Number(pick.price || 0).toLocaleString()}</span>
+              {!pick.isPublished && (
+                <span className="admin-post-hidden-badge">Hidden</span>
+              )}
+            </div>
 
-          <div className="admin-post-modal__stats admin-post-modal__stats--clean">
-            <span>
-              <FiHeart />
-              {place.likesCount || 0}
-            </span>
-
-            <span>
-              <FiMessageCircle />
-              {place.commentsCount || 0}
-            </span>
-
-            <span>
-              <FiBookmark />
-              {place.savesCount || 0}
-            </span>
-
-            {!place.isPublished && (
-              <span className="admin-post-hidden-badge">Hidden</span>
-            )}
-          </div>
-
-          <div className="admin-post-date">{formatPostDate(place.createdAt)}</div>
-
-          <div className="admin-post-comments admin-post-comments--plain">
-            {rootComments.map((comment) => (
-              <div key={comment._id} className="admin-comment-block">
+            <div className="admin-post-comments admin-post-comments--plain">
+              <div className="admin-comment-block">
                 <div className="admin-comment-block__main">
                   <div>
-                    <strong>{comment.user?.username || "user"}</strong>
-                    <p>{comment.text}</p>
-                  </div>
-
-                  <div className="admin-comment-block__actions">
-                    <button
-                      type="button"
-                      onClick={() => setReplyTo(comment._id)}
-                    >
-                      Reply
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteComment(comment._id)}
-                    >
-                      Delete
-                    </button>
+                    <strong>Travel Dates</strong>
+                    <p>
+                      {formatDate(pick.startDate)} - {formatDate(pick.endDate)}
+                    </p>
                   </div>
                 </div>
-
-                {childReplies(comment._id).map((reply) => (
-                  <div key={reply._id} className="admin-comment-reply">
-                    <strong>{reply.user?.username || "admin"}</strong>
-                    <p>{reply.text}</p>
-                  </div>
-                ))}
               </div>
-            ))}
-          </div>
 
-          {replyTo && (
-            <div className="admin-post-reply-box">
-              <input
-                type="text"
-                placeholder="Write a reply..."
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-              />
+              {!!pick.placesToVisit?.length && (
+                <div className="admin-comment-block">
+                  <div className="admin-comment-block__main">
+                    <div>
+                      <strong>Places to Visit</strong>
+                      <p>{pick.placesToVisit.join(", ")}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-              <button type="button" onClick={handleReply}>
-                Reply
-              </button>
+              {pick.accommodation && (
+                <div className="admin-comment-block">
+                  <div className="admin-comment-block__main">
+                    <div>
+                      <strong>Accommodation</strong>
+                      <p>{pick.accommodation}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {pick.meals && (
+                <div className="admin-comment-block">
+                  <div className="admin-comment-block__main">
+                    <div>
+                      <strong>Meals</strong>
+                      <p>{pick.meals}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {pick.transportation && (
+                <div className="admin-comment-block">
+                  <div className="admin-comment-block__main">
+                    <div>
+                      <strong>Transportation</strong>
+                      <p>{pick.transportation}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {pick.tourGuide && (
+                <div className="admin-comment-block">
+                  <div className="admin-comment-block__main">
+                    <div>
+                      <strong>Tour Guide</strong>
+                      <p>{pick.tourGuide}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {pick.paymentInfo && (
+                <div className="admin-comment-block">
+                  <div className="admin-comment-block__main">
+                    <div>
+                      <strong>Payment Info</strong>
+                      <p>{pick.paymentInfo}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {pick.moreDetails && (
+                <div className="admin-comment-block">
+                  <div className="admin-comment-block__main">
+                    <div>
+                      <strong>More Details</strong>
+                      <p>{pick.moreDetails}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {pick.advancePolicy && (
+                <div className="admin-comment-block">
+                  <div className="admin-comment-block__main">
+                    <div>
+                      <strong>Advance Policy</strong>
+                      <p>{pick.advancePolicy}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {pick.cancellationPolicy && (
+                <div className="admin-comment-block">
+                  <div className="admin-comment-block__main">
+                    <div>
+                      <strong>Cancellation Policy</strong>
+                      <p>{pick.cancellationPolicy}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {pick.refundPolicy && (
+                <div className="admin-comment-block">
+                  <div className="admin-comment-block__main">
+                    <div>
+                      <strong>Refund Policy</strong>
+                      <p>{pick.refundPolicy}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+
+            <div className="admin-post-date">{formatPostDate(pick.createdAt || "")}</div>
+          </div>
         </div>
       </div>
-    </div>
+
+      {showEditModal && (
+        <EditTravelPickModal
+          travelPick={pick}
+          onClose={() => setShowEditModal(false)}
+          onTravelPickUpdated={handlePickEdited}
+        />
+      )}
+    </>
   );
 }

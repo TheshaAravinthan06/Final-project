@@ -6,6 +6,7 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiCopy,
+  FiEdit2,
   FiEyeOff,
   FiHeart,
   FiMapPin,
@@ -14,7 +15,6 @@ import {
   FiShare2,
   FiTrash2,
   FiUserMinus,
-  FiEdit2,
   FiX,
 } from "react-icons/fi";
 import { ProfileGridItem } from "./types";
@@ -27,7 +27,6 @@ type Props = {
   onPrev: () => void;
   onNext: () => void;
   isOwnProfile?: boolean;
-
   onEdit?: (item: ProfileGridItem) => void;
   onHide?: (item: ProfileGridItem) => void;
   onDelete?: (item: ProfileGridItem) => void;
@@ -48,7 +47,7 @@ export default function ProfileGridModal({
   onReport,
   onUnfollow,
 }: Props) {
-  const [showMenu, setShowMenu] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [message, setMessage] = useState("");
 
   if (!open || !item) return null;
@@ -78,7 +77,7 @@ export default function ProfileGridModal({
     } catch {
       setMessage("Could not copy link");
     }
-    setShowMenu(false);
+    setMenuOpen(false);
     setTimeout(() => setMessage(""), 1500);
   };
 
@@ -95,96 +94,69 @@ export default function ProfileGridModal({
         setMessage("Link copied for sharing");
       }
     } catch {}
-    setShowMenu(false);
+    setMenuOpen(false);
     setTimeout(() => setMessage(""), 1500);
-  };
-
-  const handleEdit = () => {
-    setShowMenu(false);
-    onEdit?.(item);
-  };
-
-  const handleHide = () => {
-    setShowMenu(false);
-    onHide?.(item);
-  };
-
-  const handleDelete = () => {
-    setShowMenu(false);
-    onDelete?.(item);
-  };
-
-  const handleReport = () => {
-    setShowMenu(false);
-    onReport?.(item);
-  };
-
-  const handleUnfollow = () => {
-    setShowMenu(false);
-    onUnfollow?.(item);
   };
 
   return (
     <div
-      className="admin-post-modal-backdrop"
+      className="profile-modal-backdrop"
       onClick={() => {
-        setShowMenu(false);
+        setMenuOpen(false);
         onClose();
       }}
     >
-      <button
-        type="button"
-        className="admin-modal-arrow admin-modal-arrow--left"
-        onClick={(e) => {
-          e.stopPropagation();
-          setShowMenu(false);
-          onPrev();
-        }}
+      <div
+        className="profile-grid-modal"
+        onClick={(e) => e.stopPropagation()}
       >
-        <FiChevronLeft />
-      </button>
-
-      <button
-        type="button"
-        className="admin-modal-arrow admin-modal-arrow--right"
-        onClick={(e) => {
-          e.stopPropagation();
-          setShowMenu(false);
-          onNext();
-        }}
-      >
-        <FiChevronRight />
-      </button>
-
-      <div className="admin-post-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="admin-post-modal__top-actions">
-          <div className="admin-post-modal__menu-wrap">
+        <div className="profile-grid-modal__top-actions">
+          <div className="profile-grid-modal__menu-wrap">
             <button
               type="button"
-              className="admin-modal-top-btn"
-              onClick={() => setShowMenu((prev) => !prev)}
+              className="profile-grid-modal__icon-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen((prev) => !prev);
+              }}
+              aria-label="Open menu"
             >
               <FiMoreHorizontal />
             </button>
 
-            {showMenu && (
-              <div className="admin-post-actions-menu">
+            {menuOpen && (
+              <div className="profile-grid-modal__menu">
                 {isOwnProfile ? (
                   <>
-                    <button type="button" onClick={handleEdit}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onEdit?.(item);
+                      }}
+                    >
                       <FiEdit2 />
                       Edit
                     </button>
 
-                    <button type="button" onClick={handleHide}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onHide?.(item);
+                      }}
+                    >
                       <FiEyeOff />
                       Hide from users
                     </button>
 
                     <button
                       type="button"
-                      onClick={handleDelete}
                       className="danger"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onDelete?.(item);
+                      }}
                     >
                       <FiTrash2 />
                       Delete
@@ -197,12 +169,24 @@ export default function ProfileGridModal({
                   </>
                 ) : (
                   <>
-                    <button type="button" onClick={handleReport}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onReport?.(item);
+                      }}
+                    >
                       <FiAlertTriangle />
                       Report
                     </button>
 
-                    <button type="button" onClick={handleUnfollow}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onUnfollow?.(item);
+                      }}
+                    >
                       <FiUserMinus />
                       Unfollow
                     </button>
@@ -219,7 +203,10 @@ export default function ProfileGridModal({
                   </>
                 )}
 
-                <button type="button" onClick={() => setShowMenu(false)}>
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(false)}
+                >
                   Cancel
                 </button>
               </div>
@@ -228,52 +215,57 @@ export default function ProfileGridModal({
 
           <button
             type="button"
-            className="admin-modal-top-btn"
+            className="profile-grid-modal__icon-btn"
             onClick={onClose}
+            aria-label="Close modal"
           >
             <FiX />
           </button>
         </div>
 
-        <div className="admin-post-modal__image">
+        <button
+          type="button"
+          className="profile-grid-modal__nav profile-grid-modal__nav--left"
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpen(false);
+            onPrev();
+          }}
+          aria-label="Previous item"
+        >
+          <FiChevronLeft />
+        </button>
+
+        <button
+          type="button"
+          className="profile-grid-modal__nav profile-grid-modal__nav--right"
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpen(false);
+            onNext();
+          }}
+          aria-label="Next item"
+        >
+          <FiChevronRight />
+        </button>
+
+        <div className="profile-grid-modal__media">
           <img src={imageSrc} alt={title} />
         </div>
 
-        <div className="admin-post-modal__content">
-          <div className="admin-post-modal__header">
-            <div>
-              <h3>{title}</h3>
+        <div className="profile-grid-modal__content">
+          <div className="profile-grid-modal__top">
+            <h2>{title}</h2>
 
-              {item.location && (
-                <p>
-                  <FiMapPin />
-                  {item.location}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="admin-post-modal__caption">
-            {isBlog ? (
-              <>
-                {"excerpt" in item && item.excerpt && <p>{item.excerpt}</p>}
-
-                <div className="admin-post-modal__blog-body">
-                  {paragraphs.length ? (
-                    paragraphs.map((paragraph, index) => (
-                      <p key={index}>{paragraph}</p>
-                    ))
-                  ) : (
-                    <p>No content available.</p>
-                  )}
-                </div>
-              </>
-            ) : (
-              <p>{bodyText || "No caption available."}</p>
+            {item.location && (
+              <div className="profile-grid-modal__location">
+                <FiMapPin />
+                <span>{item.location}</span>
+              </div>
             )}
           </div>
 
-          <div className="admin-post-modal__stats">
+          <div className="profile-grid-modal__stats">
             <span>
               <FiHeart />
               {item.likesCount || 0}
@@ -285,7 +277,33 @@ export default function ProfileGridModal({
             </span>
           </div>
 
-          {message && <div className="profile-grid-modal__toast">{message}</div>}
+          {isBlog ? (
+            <>
+              {"excerpt" in item && item.excerpt && (
+                <p className="profile-grid-modal__excerpt">
+                  {item.excerpt}
+                </p>
+              )}
+
+              <div className="profile-grid-modal__body">
+                {paragraphs.length ? (
+                  paragraphs.map((p, i) => <p key={i}>{p}</p>)
+                ) : (
+                  <p>No content available.</p>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="profile-grid-modal__body">
+              <p>{bodyText || "No caption available."}</p>
+            </div>
+          )}
+
+          {message && (
+            <div className="profile-grid-modal__toast">
+              {message}
+            </div>
+          )}
         </div>
       </div>
     </div>
