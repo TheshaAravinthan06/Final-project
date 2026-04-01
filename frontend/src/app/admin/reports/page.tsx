@@ -5,9 +5,12 @@ import api from "@/lib/axios";
 
 type ReportItem = {
   _id: string;
+  reportKind: "place" | "problem";
   reason: string;
   status: string;
   createdAt: string;
+  subject?: string;
+  message?: string;
   place?: {
     _id: string;
     placeName: string;
@@ -38,12 +41,20 @@ export default function AdminReportsPage() {
 
   const handleHidePost = async (placeId?: string) => {
     if (!placeId) return;
+
     try {
-      await api.patch(`/admin/places/${placeId}/hide`);
+      const res = await api.patch(`/admin/places/${placeId}/visibility`);
+      const updatedPlace = res.data?.place;
+
       setReports((prev) =>
         prev.map((item) =>
           item.place?._id === placeId
-            ? { ...item, place: { ...item.place, isPublished: false } }
+            ? {
+                ...item,
+                place: item.place
+                  ? { ...item.place, isPublished: updatedPlace?.isPublished }
+                  : item.place,
+              }
             : item
         )
       );
@@ -66,7 +77,7 @@ export default function AdminReportsPage() {
       <div className="admin-page-head">
         <div>
           <h1>Reports</h1>
-          <p>Moderate reported posts and users from here.</p>
+          <p>Moderate reported content and user submitted problems from here.</p>
         </div>
       </div>
 
@@ -74,17 +85,39 @@ export default function AdminReportsPage() {
         {reports.map((report) => (
           <div key={report._id} className="admin-report-card">
             <div>
-              <h4>{report.place?.placeName || "Reported place"}</h4>
-              <p>
-                Reported by {report.reportedBy?.username || "user"} • {report.reason || "No reason added"}
-              </p>
+              <h4>
+                {report.reportKind === "problem"
+                  ? report.subject || "Problem report"
+                  : report.place?.placeName || "Reported place"}
+              </h4>
+
+              {report.reportKind === "problem" ? (
+                <p>
+                  Sent by {report.reportedBy?.username || "user"} •{" "}
+                  {report.message || "No details added"}
+                </p>
+              ) : (
+                <p>
+                  Reported by {report.reportedBy?.username || "user"} •{" "}
+                  {report.reason || "No reason added"}
+                </p>
+              )}
             </div>
 
             <div className="admin-report-actions">
-              <button type="button" onClick={() => handleHidePost(report.place?._id)}>
-                {report.place?.isPublished ? "Hide Post" : "Already Hidden"}
-              </button>
-              <button type="button" onClick={() => handleBlockUser(report.reportedBy?._id)}>
+              {report.reportKind === "place" && (
+                <button
+                  type="button"
+                  onClick={() => handleHidePost(report.place?._id)}
+                >
+                  {report.place?.isPublished ? "Hide Post" : "Show Post"}
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => handleBlockUser(report.reportedBy?._id)}
+              >
                 Block User
               </button>
             </div>

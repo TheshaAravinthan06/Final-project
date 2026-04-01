@@ -4,6 +4,7 @@ import UserPost from "../models/userPost.models.js";
 import fs from "fs";
 import Review from "../models/review.models.js";
 import { createUserNotification } from "../utils/createUserNotification.js";
+import ProblemReport from "../models/problemReport.models.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -518,6 +519,32 @@ export const deleteMyReview = async (req, res) => {
 
     return res.status(200).json({
       message: "Review deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// REPORT A PROBLEM
+export const createProblemReport = async (req, res) => {
+  try {
+    const { subject, message } = req.body;
+
+    if (!subject?.trim() || !message?.trim()) {
+      return res.status(400).json({
+        message: "Subject and message are required",
+      });
+    }
+
+    const report = await ProblemReport.create({
+      reportedBy: req.user._id,
+      subject: subject.trim(),
+      message: message.trim(),
+    });
+
+    return res.status(201).json({
+      message: "Problem report submitted successfully",
+      report,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });

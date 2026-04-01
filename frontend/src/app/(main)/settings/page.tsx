@@ -14,6 +14,7 @@ import {
   FiLogOut,
   FiMoon,
   FiPower,
+  FiSun,
 } from "react-icons/fi";
 import {
   formatJoinedInterests,
@@ -21,6 +22,7 @@ import {
   getInitials,
 } from "@/components/profile/profileUtils";
 import { ProfileUser } from "@/components/profile/types";
+import { applyTheme, getSavedTheme, initTheme, type AppTheme } from "@/lib/theme";
 
 type SettingsTab =
   | "edit-profile"
@@ -63,6 +65,9 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+  const [theme, setTheme] = useState<AppTheme>("light");
+
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -74,6 +79,11 @@ export default function SettingsPage() {
     location: "",
     work: "",
   });
+
+  useEffect(() => {
+    initTheme();
+    setTheme(getSavedTheme());
+  }, []);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -174,6 +184,23 @@ export default function SettingsPage() {
     } finally {
       setAvatarUploading(false);
       event.target.value = "";
+    }
+  };
+
+  const handleThemeChange = (nextTheme: AppTheme) => {
+    setTheme(nextTheme);
+    applyTheme(nextTheme);
+  };
+
+  const handleLogout = async () => {
+    try {
+      setLogoutLoading(true);
+      await api.post("/auth/logout");
+      router.push("/");
+    } catch (err) {
+      console.error("Logout failed:", err);
+    } finally {
+      setLogoutLoading(false);
     }
   };
 
@@ -355,20 +382,79 @@ export default function SettingsPage() {
                 </div>
               </form>
             </>
+          ) : currentTab === "appearance" ? (
+            <div className="settings-clean-placeholder">
+              <div className="settings-clean-placeholder__inner">
+                <div className="settings-clean-content__head settings-clean-content__head--placeholder">
+                  <h3>Appearance</h3>
+                </div>
+
+                <div className="settings-theme-panel">
+                  <button
+                    type="button"
+                    className={`settings-theme-panel__item ${
+                      theme === "light" ? "active" : ""
+                    }`}
+                    onClick={() => handleThemeChange("light")}
+                  >
+                    <span className="settings-theme-panel__left">
+                      <FiSun />
+                      <span>Light mode</span>
+                    </span>
+                    <span>{theme === "light" ? "Selected" : ""}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`settings-theme-panel__item ${
+                      theme === "dark" ? "active" : ""
+                    }`}
+                    onClick={() => handleThemeChange("dark")}
+                  >
+                    <span className="settings-theme-panel__left">
+                      <FiMoon />
+                      <span>Dark mode</span>
+                    </span>
+                    <span>{theme === "dark" ? "Selected" : ""}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : currentTab === "logout" ? (
+            <div className="settings-clean-placeholder">
+              <div className="settings-clean-placeholder__inner">
+                <div className="settings-clean-content__head settings-clean-content__head--placeholder">
+                  <h3>Logout</h3>
+                </div>
+
+                <div className="settings-logout-box">
+                  <p>You can safely log out from here.</p>
+                  <button
+                    type="button"
+                    className="settings-logout-box__btn"
+                    onClick={handleLogout}
+                    disabled={logoutLoading}
+                  >
+                    <FiLogOut />
+                    {logoutLoading ? "Logging out..." : "Log out"}
+                  </button>
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="settings-clean-placeholder">
-  <div className="settings-clean-placeholder__inner">
-    <div className="settings-clean-content__head settings-clean-content__head--placeholder">
-      <h3>
-        {settingsItems.find((item) => item.key === currentTab)?.label}
-      </h3>
-    </div>
+              <div className="settings-clean-placeholder__inner">
+                <div className="settings-clean-content__head settings-clean-content__head--placeholder">
+                  <h3>
+                    {settingsItems.find((item) => item.key === currentTab)?.label}
+                  </h3>
+                </div>
 
-    <div className="settings-clean-placeholder__body">
-      <p>This section can be connected next.</p>
-    </div>
-  </div>
-</div>
+                <div className="settings-clean-placeholder__body">
+                  <p>This section can be connected next.</p>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

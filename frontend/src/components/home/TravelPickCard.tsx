@@ -1,6 +1,7 @@
 "use client";
 
 import { FiBookmark, FiCalendar } from "react-icons/fi";
+import { useRouter } from "next/navigation";
 
 type TravelPick = {
   _id: string;
@@ -67,6 +68,19 @@ const formatTripDate = (dateString: string) => {
 };
 
 export default function TravelPickCard({ pick, onBookNow }: Props) {
+  const router = useRouter();
+
+  const handleBookNow = () => {
+    if (!pick.isBookingOpen) return;
+
+    if (onBookNow) {
+      onBookNow(pick);
+      return;
+    }
+
+    router.push(`/travel-picks/${pick._id}`);
+  };
+
   return (
     <article className="travel-pick-card">
       <div className="travel-pick-card__image-wrap">
@@ -97,7 +111,7 @@ export default function TravelPickCard({ pick, onBookNow }: Props) {
           <button
             type="button"
             className="travel-pick-card__book-btn"
-            onClick={() => onBookNow?.(pick)}
+            onClick={handleBookNow}
             disabled={!pick.isBookingOpen}
           >
             {pick.isBookingOpen ? "Book now" : "Booking closed"}

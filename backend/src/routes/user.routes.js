@@ -13,12 +13,14 @@ import {
   addReviewToUser,
   getReviewsOfUser,
   deleteMyReview,
+  createProblemReport,
 } from "../controllers/user.controller.js";
 
 const router = express.Router();
 
 router.get("/me", protect, getMyProfile);
 router.put("/me", protect, updateMyProfile);
+router.post("/report-problem", protect, createProblemReport);
 
 router.post(
   "/me/avatar",

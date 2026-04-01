@@ -20,7 +20,8 @@ type SearchUser = {
 const getImageUrl = (path?: string) => {
   if (!path) return "";
   if (path.startsWith("http")) return path;
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+  const base =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
   return `${base}${path}`;
 };
 
@@ -35,6 +36,7 @@ export default function SearchOverlay({
   const [users, setUsers] = useState<SearchUser[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // load recent searches
   useEffect(() => {
     const saved = localStorage.getItem("trip_recent_searches");
     if (saved) {
@@ -42,10 +44,15 @@ export default function SearchOverlay({
     }
   }, []);
 
+  // save recent searches
   useEffect(() => {
-    localStorage.setItem("trip_recent_searches", JSON.stringify(recentSearches));
+    localStorage.setItem(
+      "trip_recent_searches",
+      JSON.stringify(recentSearches)
+    );
   }, [recentSearches]);
 
+  // close on ESC
   useEffect(() => {
     if (!isOpen) return;
 
@@ -57,6 +64,7 @@ export default function SearchOverlay({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
+  // search API
   useEffect(() => {
     if (!isOpen || !query.trim()) {
       setUsers([]);
@@ -66,10 +74,12 @@ export default function SearchOverlay({
     const timer = setTimeout(async () => {
       try {
         setLoading(true);
-        const res = await api.get(`/search/users?q=${encodeURIComponent(query)}`);
+        const res = await api.get(
+          `/search/users?q=${encodeURIComponent(query)}`
+        );
         setUsers(res.data.users || []);
       } catch (error) {
-        console.error("Search failed:", error);
+        console.error("Search error:", error);
         setUsers([]);
       } finally {
         setLoading(false);
@@ -79,6 +89,7 @@ export default function SearchOverlay({
     return () => clearTimeout(timer);
   }, [query, isOpen]);
 
+  // add recent
   const addRecent = (value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return;
@@ -91,9 +102,12 @@ export default function SearchOverlay({
   const clearAll = () => setRecentSearches([]);
 
   const removeRecent = (value: string) => {
-    setRecentSearches((prev) => prev.filter((item) => item !== value));
+    setRecentSearches((prev) =>
+      prev.filter((item) => item !== value)
+    );
   };
 
+  // click user
   const handleUserClick = (user: SearchUser) => {
     addRecent(user.username || query);
     onClose();
@@ -109,12 +123,15 @@ export default function SearchOverlay({
 
   return (
     <>
+      {/* backdrop */}
       <div
         className={`search-overlay-backdrop ${isOpen ? "open" : ""}`}
         onClick={onClose}
       />
 
+      {/* panel */}
       <aside className={`search-overlay-panel ${isOpen ? "open" : ""}`}>
+        {/* header */}
         <div className="search-overlay-panel__header">
           <div className="search-overlay-panel__title-row">
             <h2>Search</h2>
@@ -123,26 +140,27 @@ export default function SearchOverlay({
               type="button"
               className="search-overlay-panel__close"
               onClick={onClose}
-              aria-label="Close search"
             >
               <FiX />
             </button>
           </div>
 
+          {/* input */}
           <div className="search-overlay-input">
             <FiSearch className="search-overlay-input__icon" />
+
             <input
               type="text"
               placeholder="Search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+
             {query && (
               <button
                 type="button"
                 className="search-overlay-input__clear"
                 onClick={() => setQuery("")}
-                aria-label="Clear search"
               >
                 <FiX />
               </button>
@@ -150,11 +168,13 @@ export default function SearchOverlay({
           </div>
         </div>
 
+        {/* body */}
         <div className="search-overlay-panel__body">
           {!query.trim() ? (
             <>
               <div className="search-overlay-section-head">
                 <h3>Recent</h3>
+
                 {recentSearches.length > 0 && (
                   <button type="button" onClick={clearAll}>
                     Clear all
@@ -165,7 +185,10 @@ export default function SearchOverlay({
               {recentSearches.length > 0 ? (
                 <div className="search-overlay-recent-list">
                   {recentSearches.map((item) => (
-                    <div key={item} className="search-overlay-recent-item">
+                    <div
+                      key={item}
+                      className="search-overlay-recent-item"
+                    >
                       <button
                         type="button"
                         className="search-overlay-recent-item__main"
@@ -174,6 +197,7 @@ export default function SearchOverlay({
                         <span className="search-overlay-recent-item__icon">
                           <FiSearch />
                         </span>
+
                         <span className="search-overlay-recent-item__text">
                           {item}
                         </span>
@@ -183,7 +207,6 @@ export default function SearchOverlay({
                         type="button"
                         className="search-overlay-recent-item__remove"
                         onClick={() => removeRecent(item)}
-                        aria-label={`Remove ${item}`}
                       >
                         <FiX />
                       </button>
@@ -191,15 +214,23 @@ export default function SearchOverlay({
                   ))}
                 </div>
               ) : (
-                <div className="search-overlay-empty">{emptyState}</div>
+                <div className="search-overlay-empty">
+                  {emptyState}
+                </div>
               )}
             </>
           ) : (
-            <div className="search-overlay-results insta-search-results">
-              {loading && <div className="search-overlay-empty">Searching...</div>}
+            <div className="search-users-list">
+              {loading && (
+                <div className="search-overlay-empty">
+                  Searching...
+                </div>
+              )}
 
               {!loading && users.length === 0 && (
-                <div className="search-overlay-empty">No results found</div>
+                <div className="search-overlay-empty">
+                  No results found
+                </div>
               )}
 
               {!loading &&
@@ -207,28 +238,31 @@ export default function SearchOverlay({
                   <button
                     key={user._id}
                     type="button"
-                    className="insta-search-item"
+                    className="search-user-item"
                     onClick={() => handleUserClick(user)}
                   >
-                    <div className="insta-search-item__avatar-wrap">
+                    <div className="search-user-avatar-wrap">
                       {user.profileImage ? (
                         <img
                           src={getImageUrl(user.profileImage)}
                           alt={user.username}
-                          className="insta-search-item__avatar"
+                          className="search-user-avatar"
                         />
                       ) : (
-                        <div className="insta-search-item__avatar insta-search-item__avatar--fallback">
-                          {user.username?.charAt(0).toUpperCase()}
+                        <div className="search-user-avatar search-user-avatar--fallback">
+                          {user.username
+                            ?.charAt(0)
+                            .toUpperCase()}
                         </div>
                       )}
                     </div>
 
-                    <div className="insta-search-item__text">
-                      <div className="insta-search-item__username">
+                    <div className="search-user-text">
+                      <div className="search-user-username">
                         {user.username}
                       </div>
-                      <div className="insta-search-item__name">
+
+                      <div className="search-user-name">
                         {user.name || user.username}
                       </div>
                     </div>

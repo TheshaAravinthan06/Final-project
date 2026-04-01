@@ -23,9 +23,9 @@ export default function CreateMenu({
         >
           <div className="create-menu-item__text">
             <strong>Post</strong>
-            <span>Share a travel moment with photo and caption</span>
+            {/* <span>Share a travel moment with photo and caption</span> */}
           </div>
-          <span className="create-menu-icon">🖼️</span>
+          {/* <span className="create-menu-icon">🖼️</span> */}
         </button>
 
         <button
@@ -35,9 +35,9 @@ export default function CreateMenu({
         >
           <div className="create-menu-item__text">
             <strong>Travel Blog</strong>
-            <span>Write a full travel story on a separate page</span>
+            {/* <span>Write a full travel story on a separate page</span> */}
           </div>
-          <span className="create-menu-icon">📝</span>
+          {/* <span className="create-menu-icon">📝</span> */}
         </button>
       </div>
     </>

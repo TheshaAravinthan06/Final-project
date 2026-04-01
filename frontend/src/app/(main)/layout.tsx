@@ -32,8 +32,8 @@ export default function MainLayout({
   return (
     <div
       className={`app-shell ${
-        isSearchOpen || isNotificationsOpen ? "app-shell--overlay-open" : ""
-      }`}
+        isSearchOpen ? "app-shell--search-open" : ""
+      } ${isNotificationsOpen ? "app-shell--overlay-open" : ""}`}
     >
       <Sidebar
         onOpenSearch={openSearch}
@@ -43,6 +43,7 @@ export default function MainLayout({
       <main className="app-shell__content">{children}</main>
 
       <SearchOverlay isOpen={isSearchOpen} onClose={closeOverlays} />
+
       <NotificationsOverlay
         isOpen={isNotificationsOpen}
         onClose={closeOverlays}

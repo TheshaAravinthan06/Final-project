@@ -7,6 +7,7 @@ import Booking from "../models/booking.models.js";
 import Payment from "../models/payment.models.js";
 import TravelPick from "../models/travelPick.models.js";
 import Itinerary from "../models/itinerary.models.js";
+import ProblemReport from "../models/problemReport.models.js";
 
 export const adminDashboardStats = async (req, res) => {
   try {
@@ -296,10 +297,42 @@ export const adminMarkNotificationRead = async (req, res) => {
 
 export const adminGetReports = async (req, res) => {
   try {
-    const reports = await PlaceReport.find()
+    const placeReports = await PlaceReport.find()
       .populate("place", "placeName imageUrl isPublished createdBy")
       .populate("reportedBy", "username email")
       .sort({ createdAt: -1 });
+
+    const problemReports = await ProblemReport.find()
+      .populate("reportedBy", "username email")
+      .sort({ createdAt: -1 });
+
+    const normalizedPlaceReports = placeReports.map((item) => ({
+      _id: item._id,
+      reportKind: "place",
+      reason: item.reason || "",
+      status: item.status,
+      createdAt: item.createdAt,
+      place: item.place || null,
+      reportedBy: item.reportedBy || null,
+      subject: "",
+      message: "",
+    }));
+
+    const normalizedProblemReports = problemReports.map((item) => ({
+      _id: item._id,
+      reportKind: "problem",
+      reason: "",
+      status: item.status,
+      createdAt: item.createdAt,
+      place: null,
+      reportedBy: item.reportedBy || null,
+      subject: item.subject || "",
+      message: item.message || "",
+    }));
+
+    const reports = [...normalizedProblemReports, ...normalizedPlaceReports].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
 
     return res.status(200).json({
       count: reports.length,

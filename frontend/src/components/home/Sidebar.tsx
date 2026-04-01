@@ -12,28 +12,25 @@ import {
   FiMapPin,
   FiCpu,
   FiSettings,
-  FiActivity,
-  FiBookmark,
   FiSun,
   FiAlertCircle,
   FiLogOut,
   FiSearch,
+  FiChevronLeft,
+  FiMoon,
 } from "react-icons/fi";
 import CreateMenu from "@/components/create/CreateMenu";
 import CreatePostModal from "@/components/create/CreatePostModal";
+import ReportProblemModal from "@/components/home/ReportProblemModal";
+import api from "@/lib/axios";
+import { applyTheme, getSavedTheme, initTheme, type AppTheme } from "@/lib/theme";
 
 type SidebarProps = {
   onOpenSearch: () => void;
   onOpenNotifications: () => void;
 };
 
-const moreMenuItems = [
-  { label: "Settings", href: "/settings", icon: FiSettings },
-  { label: "Your activity", href: "/activity", icon: FiActivity },
-  { label: "Saved", href: "/saved", icon: FiBookmark },
-  { label: "Switch appearance", href: "/appearance", icon: FiSun },
-  { label: "Report a problem", href: "/report-problem", icon: FiAlertCircle },
-];
+type MorePanel = "main" | "appearance";
 
 export default function Sidebar({
   onOpenSearch,
@@ -43,15 +40,25 @@ export default function Sidebar({
   const router = useRouter();
 
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState<MorePanel>("main");
+  const [theme, setTheme] = useState<AppTheme>("light");
+
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   const moreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    initTheme();
+    setTheme(getSavedTheme());
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (moreRef.current && !moreRef.current.contains(event.target as Node)) {
         setIsMoreOpen(false);
+        setActivePanel("main");
       }
     };
 
@@ -63,6 +70,7 @@ export default function Sidebar({
 
   useEffect(() => {
     setIsMoreOpen(false);
+    setActivePanel("main");
     setIsCreateMenuOpen(false);
     setIsCreatePostOpen(false);
   }, [pathname]);
@@ -80,6 +88,43 @@ export default function Sidebar({
   const handleSelectBlog = () => {
     setIsCreateMenuOpen(false);
     router.push("/create-blog");
+  };
+
+  const handleOpenSettings = () => {
+    setIsMoreOpen(false);
+    setActivePanel("main");
+    router.push("/settings");
+  };
+
+  const handleOpenAppearance = () => {
+    setActivePanel("appearance");
+  };
+
+  const handleBackToMainMenu = () => {
+    setActivePanel("main");
+  };
+
+  const handleThemeChange = (nextTheme: AppTheme) => {
+    setTheme(nextTheme);
+    applyTheme(nextTheme);
+  };
+
+  const handleOpenReportModal = () => {
+    setIsMoreOpen(false);
+    setActivePanel("main");
+    setIsReportModalOpen(true);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setIsMoreOpen(false);
+      setActivePanel("main");
+      router.push("/");
+    }
   };
 
   return (
@@ -191,7 +236,10 @@ export default function Sidebar({
             className={`trip-nav__item trip-nav__button ${
               isMoreOpen ? "active" : ""
             }`}
-            onClick={() => setIsMoreOpen((prev) => !prev)}
+            onClick={() => {
+              setIsMoreOpen((prev) => !prev);
+              setActivePanel("main");
+            }}
           >
             <span className="trip-nav__icon-wrap">
               <span className="trip-nav__icon-box">
@@ -201,36 +249,107 @@ export default function Sidebar({
             <span className="trip-nav__label">More</span>
           </button>
 
-          {isMoreOpen && (
+          {isMoreOpen && activePanel === "main" && (
             <div className="trip-more-menu">
               <div className="trip-more-menu__group">
-                {moreMenuItems.map((item) => {
-                  const Icon = item.icon;
+                <button
+                  type="button"
+                  className="trip-more-menu__item"
+                  onClick={handleOpenSettings}
+                >
+                  <span className="trip-more-menu__icon">
+                    <FiSettings />
+                  </span>
+                  <span>Settings</span>
+                </button>
 
-                  return (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className="trip-more-menu__item"
-                    >
-                      <span className="trip-more-menu__icon">
-                        <Icon />
-                      </span>
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
+                <button
+                  type="button"
+                  className="trip-more-menu__item"
+                  onClick={handleOpenAppearance}
+                >
+                  <span className="trip-more-menu__icon">
+                    <FiSun />
+                  </span>
+                  <span>Switch appearance</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="trip-more-menu__item"
+                  onClick={handleOpenReportModal}
+                >
+                  <span className="trip-more-menu__icon">
+                    <FiAlertCircle />
+                  </span>
+                  <span>Report a problem</span>
+                </button>
               </div>
 
               <div className="trip-more-menu__group trip-more-menu__group--logout">
                 <button
                   type="button"
                   className="trip-more-menu__item trip-more-menu__logout"
+                  onClick={handleLogout}
                 >
                   <span className="trip-more-menu__icon">
                     <FiLogOut />
                   </span>
                   <span>Log out</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isMoreOpen && activePanel === "appearance" && (
+            <div className="trip-more-menu trip-more-menu--appearance">
+              <div className="trip-more-menu__appearance-head">
+                <button
+                  type="button"
+                  className="trip-more-menu__back-btn"
+                  onClick={handleBackToMainMenu}
+                >
+                  <FiChevronLeft />
+                </button>
+
+                <h4>Switch appearance</h4>
+
+                <span className="trip-more-menu__appearance-icon">
+                  <FiSun />
+                </span>
+              </div>
+
+              <div className="trip-more-menu__appearance-body">
+                <button
+                  type="button"
+                  className={`trip-theme-option ${
+                    theme === "light" ? "active" : ""
+                  }`}
+                  onClick={() => handleThemeChange("light")}
+                >
+                  <span className="trip-theme-option__left">
+                    <FiSun />
+                    <span>Light mode</span>
+                  </span>
+                  <span className="trip-theme-option__check">
+                    {theme === "light" ? "●" : ""}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`trip-theme-option ${
+                    theme === "dark" ? "active" : ""
+                  }`}
+                  onClick={() => handleThemeChange("dark")}
+                >
+                  <span className="trip-theme-option__left">
+                    <FiMoon />
+                    <span>Dark mode</span>
+                  </span>
+                  <span className="trip-theme-option__check">
+                    {theme === "dark" ? "●" : ""}
+                  </span>
                 </button>
               </div>
             </div>
@@ -249,6 +368,11 @@ export default function Sidebar({
       {isCreatePostOpen && (
         <CreatePostModal onClose={() => setIsCreatePostOpen(false)} />
       )}
+
+      <ReportProblemModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+      />
     </>
   );
 }
