@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/axios";
 import { FiBell, FiSearch } from "react-icons/fi";
 import { useRouter } from "next/navigation";
@@ -20,6 +20,9 @@ type AdminSearchResult = {
     username: string;
     name?: string;
     email?: string;
+    role?: string;
+    profileImage?: string;
+    isActive?: boolean;
   }>;
   places: Array<{
     _id: string;
@@ -48,6 +51,10 @@ function getImageUrl(path?: string) {
   if (path.startsWith("http")) return path;
   const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
   return `${base}${path}`;
+}
+
+function getInitialLetter(name?: string, username?: string) {
+  return (name?.trim()?.charAt(0) || username?.trim()?.charAt(0) || "U").toUpperCase();
 }
 
 export default function AdminTopbar() {
@@ -107,7 +114,7 @@ export default function AdminTopbar() {
       } catch (error) {
         console.error("Admin search failed:", error);
       }
-    }, 300);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [query]);
@@ -135,15 +142,22 @@ export default function AdminTopbar() {
   const imageUrl = getImageUrl(admin?.profileImage);
   const fallbackLetter = displayName.charAt(0).toUpperCase();
 
-  const hasResults =
-    !!results &&
-    (
-      results.users?.length ||
-      results.places?.length ||
-      results.travelPicks?.length ||
-      results.itineraries?.length ||
-      results.bookings?.length
-    );
+  const hasResults = useMemo(() => {
+    return !!results &&
+      (
+        results.users?.length ||
+        results.places?.length ||
+        results.travelPicks?.length ||
+        results.itineraries?.length ||
+        results.bookings?.length
+      );
+  }, [results]);
+
+  const handleUserOpen = (userId: string) => {
+    setShowResults(false);
+    setQuery("");
+    router.push(`/admin/users/${userId}`);
+  };
 
   return (
     <header className="admin-topbar">
@@ -152,7 +166,7 @@ export default function AdminTopbar() {
           <FiSearch />
           <input
             type="text"
-            placeholder="Search dashboard, users, packages..."
+            placeholder="Search users, places, packages..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => {
@@ -170,22 +184,34 @@ export default function AdminTopbar() {
 
             {results?.users?.length ? (
               <div className="admin-search-group">
-                <h5>Users</h5>
-                {results.users.map((item) => (
-                  <button
-                    key={item._id}
-                    type="button"
-                    className="admin-search-item"
-                    onClick={() => {
-                      setShowResults(false);
-                      setQuery("");
-                      router.push("/admin/users");
-                    }}
-                  >
-                    <strong>{item.username}</strong>
-                    <span>{item.email || item.name || "User"}</span>
-                  </button>
-                ))}
+                <h5>Profiles</h5>
+
+                {results.users.map((item) => {
+                  const profileImg = getImageUrl(item.profileImage);
+                  const profileName = item.name?.trim() || item.username;
+
+                  return (
+                    <button
+                      key={item._id}
+                      type="button"
+                      className="admin-search-item admin-search-item--user"
+                      onClick={() => handleUserOpen(item._id)}
+                    >
+                      <div className="admin-search-item__avatar">
+                        {profileImg ? (
+                          <img src={profileImg} alt={profileName} />
+                        ) : (
+                          <span>{getInitialLetter(item.name, item.username)}</span>
+                        )}
+                      </div>
+
+                      <div className="admin-search-item__content">
+                        <strong>{item.username}</strong>
+                        <span>{profileName}</span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             ) : null}
 

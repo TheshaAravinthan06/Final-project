@@ -279,13 +279,17 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <ProfileGridModal
-        open={isModalOpen}
-        item={selectedIndex !== null ? posts[selectedIndex] : null}
-        onClose={handleCloseModal}
-        onPrev={handlePrevItem}
-        onNext={handleNextItem}
-      />
+    <ProfileGridModal
+  open={isModalOpen}
+  item={selectedIndex !== null ? posts[selectedIndex] : null}
+  onClose={handleCloseModal}
+  onPrev={handlePrevItem}
+  onNext={handleNextItem}
+  isOwnProfile
+  onEdit={(item) => console.log("edit", item)}
+  onHide={(item) => console.log("hide", item)}
+  onDelete={(item) => console.log("delete", item)}
+/>
     </section>
   );
 }
