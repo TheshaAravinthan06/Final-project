@@ -375,12 +375,12 @@ export const createStripeCheckoutSession = async (req, res) => {
     });
 
     return res.status(200).json({
-      message: "Checkout session created",
-      sessionId: session.id,
-      publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "",
-      bookingId: finalBooking._id,
-      amount,
-    });
+  message: "Checkout session created",
+  url: session.url, // 🔥 THIS IS THE FIX
+  bookingId: finalBooking._id,
+  amount,
+});
+
   } catch (error) {
     console.error("createStripeCheckoutSession error:", error);
     return res.status(500).json({ message: error.message });

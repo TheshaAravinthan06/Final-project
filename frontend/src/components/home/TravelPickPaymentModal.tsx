@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { loadStripe } from "@stripe/stripe-js";
 import { FiX, FiUsers, FiPhone, FiMail, FiUser, FiFileText } from "react-icons/fi";
 import api from "@/lib/axios";
 
@@ -97,52 +96,42 @@ export default function TravelPickPaymentModal({ open, pick, onClose }: Props) {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (!pick?._id) return;
+  if (!pick?._id) return;
 
-    try {
-      setLoading(true);
-      setError("");
+  try {
+    setLoading(true);
+    setError("");
 
-      const res = await api.post("/payments/checkout-session", {
-        travelPickId: pick._id,
-        fullName: form.fullName,
-        email: form.email,
-        phone: form.phone,
-        travelersCount: form.travelersCount,
-        specialNote: form.specialNote,
-        paymentType: form.paymentType,
-      });
+    const res = await api.post("/payments/checkout-session", {
+      travelPickId: pick._id,
+      fullName: form.fullName,
+      email: form.email,
+      phone: form.phone,
+      travelersCount: form.travelersCount,
+      specialNote: form.specialNote,
+      paymentType: form.paymentType,
+    });
 
-      const sessionId = res.data?.sessionId;
-      const publishableKey =
-        res.data?.publishableKey ||
-        process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    const checkoutUrl = res.data?.url;
 
-      if (!sessionId || !publishableKey) {
-        throw new Error("Stripe session was not created properly");
-      }
-
-      const stripe = await loadStripe(publishableKey);
-
-      if (!stripe) {
-        throw new Error("Stripe failed to load");
-      }
-
-      const result = await stripe.redirectToCheckout({ sessionId });
-
-      if (result.error?.message) {
-        throw new Error(result.error.message);
-      }
-    } catch (err: any) {
-      console.error("Stripe checkout failed:", err);
-      setError(err?.response?.data?.message || err?.message || "Payment failed");
-    } finally {
-      setLoading(false);
+    if (!checkoutUrl) {
+      console.log("Stripe response:", res.data); // debug
+      throw new Error("Checkout URL not received");
     }
-  };
+
+    // ✅ Stripe redirect
+    window.location.href = checkoutUrl;
+
+  } catch (err: any) {
+    console.error("Stripe checkout failed:", err);
+    setError(err?.response?.data?.message || err?.message || "Payment failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (!open || !pick) return null;
 
