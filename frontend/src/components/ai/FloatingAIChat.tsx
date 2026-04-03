@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "@/styles/floating-ai.scss";
-import { FiSend, FiX, FiMessageCircle, FiBookmark, FiShare2 } from "react-icons/fi";
+import {
+  FiSend,
+  FiX,
+  FiMessageCircle,
+  FiBookmark,
+  FiShare2,
+} from "react-icons/fi";
 import api from "@/lib/axios";
 
 type Message = {
@@ -28,39 +34,94 @@ type Itinerary = {
   generatedItinerary?: ItineraryDay[];
 };
 
+type PlannerForm = {
+  mood: string;
+  destination: string;
+  days: number;
+  budget: number;
+  travelersCount: number;
+  travelWithStrangers: boolean;
+  preferences: string[];
+  specialNote: string;
+};
+
 type Props = {
   isOpen: boolean;
   onClose: () => void;
+  fullPage?: boolean;
 };
 
-const initialMessages: Message[] = [
-  {
-    id: "m1",
-    sender: "ai",
-    text: "Hi! I’m Trip AI 👋 How are you feeling today?",
-  },
-];
+const initialForm: PlannerForm = {
+  mood: "",
+  destination: "",
+  days: 2,
+  budget: 0,
+  travelersCount: 1,
+  travelWithStrangers: false,
+  preferences: [],
+  specialNote: "",
+};
 
-export default function FloatingAIChat({ isOpen, onClose }: Props) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+const steps = [
+  {
+    key: "mood",
+    question: "Hi! I’m PackPalz 👋 How are you feeling for this trip?",
+  },
+  {
+    key: "destination",
+    question: "Nice. Where do you want to go?",
+  },
+  {
+    key: "days",
+    question: "How many days do you want for this trip?",
+  },
+  {
+    key: "budget",
+    question: "What is your budget for this trip?",
+  },
+  {
+    key: "travelersCount",
+    question: "How many people are traveling?",
+  },
+  {
+    key: "travelWithStrangers",
+    question: "Do you want to travel with strangers? Reply yes or no.",
+  },
+  {
+    key: "preferences",
+    question:
+      "Any preferences? For example beach, food, calm, adventure, hiking. You can type comma separated.",
+  },
+  {
+    key: "specialNote",
+    question: "Any special note for the trip? If not, type no.",
+  },
+] as const;
+
+export default function FloatingAIChat({
+  isOpen,
+  onClose,
+  fullPage = false,
+}: Props) {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "m1",
+      sender: "ai",
+      text: steps[0].question,
+    },
+  ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   const [showActions, setShowActions] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [formData, setFormData] = useState<PlannerForm>(initialForm);
 
-  const conversation = useMemo(
-    () =>
-      messages.map((msg) => ({
-        role: msg.sender === "ai" ? "assistant" : "user",
-        content: msg.text,
-      })),
-    [messages]
-  );
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isOpen, loading]);
+  }, [messages, loading, itinerary, isOpen]);
 
   const pushMessage = (sender: "ai" | "user", text: string) => {
     setMessages((prev) => [
@@ -73,51 +134,110 @@ export default function FloatingAIChat({ isOpen, onClose }: Props) {
     ]);
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
+  const parseValueForStep = (stepKey: string, raw: string) => {
+    const value = raw.trim();
 
-    const userMessage = input.trim();
-    pushMessage("user", userMessage);
-    setInput("");
-    setLoading(true);
+    switch (stepKey) {
+      case "days": {
+        const num = Number(value);
+        return Number.isNaN(num) || num < 1 ? 1 : num;
+      }
 
+      case "budget": {
+        const num = Number(value);
+        return Number.isNaN(num) || num < 0 ? 0 : num;
+      }
+
+      case "travelersCount": {
+        const num = Number(value);
+        return Number.isNaN(num) || num < 1 ? 1 : num;
+      }
+
+      case "travelWithStrangers":
+        return ["yes", "y", "true"].includes(value.toLowerCase());
+
+      case "preferences":
+        return value.toLowerCase() === "no"
+          ? []
+          : value
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean);
+
+      case "specialNote":
+        return value.toLowerCase() === "no" ? "" : value;
+
+      default:
+        return value;
+    }
+  };
+
+  const handleGenerate = async (finalData: PlannerForm) => {
     try {
-      const res = await api.post("/ai/chat", {
-        message: userMessage,
-        conversation: [...conversation, { role: "user", content: userMessage }],
+      setLoading(true);
+
+      const res = await api.post("/ai/generate", {
+        ...finalData,
+        saveToDb: false,
       });
 
-      const data = res.data;
+      const result = res?.data?.result || null;
+      setItinerary(result);
+      setShowActions(true);
 
-      if (data?.reply) {
-        pushMessage("ai", data.reply);
-      }
-
-      if (data?.isComplete && data?.itinerary) {
-        setItinerary(data.itinerary);
-        setShowActions(true);
-
-        pushMessage(
-          "ai",
-          "Your itinerary is ready. You can save it or send it to admin."
-        );
-      }
+      pushMessage(
+        "ai",
+        "Your itinerary is ready ✨ You can save it or send it to admin."
+      );
     } catch (error: any) {
       pushMessage(
         "ai",
-        error?.response?.data?.message ||
-          "Something went wrong while talking to Trip AI."
+        error?.response?.data?.message || "Failed to generate itinerary."
       );
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSend = async () => {
+    if (!input.trim() || loading || itinerary) return;
+
+    const userMessage = input.trim();
+    const currentStep = steps[stepIndex];
+
+    pushMessage("user", userMessage);
+    setInput("");
+
+    const parsedValue = parseValueForStep(currentStep.key, userMessage);
+    const updatedForm = {
+      ...formData,
+      [currentStep.key]: parsedValue,
+    } as PlannerForm;
+
+    setFormData(updatedForm);
+
+    const nextStepIndex = stepIndex + 1;
+
+    if (nextStepIndex < steps.length) {
+      setStepIndex(nextStepIndex);
+      setTimeout(() => {
+        pushMessage("ai", steps[nextStepIndex].question);
+      }, 250);
+      return;
+    }
+
+    await handleGenerate(updatedForm);
+  };
+
   const handleSave = async () => {
     if (!itinerary) return;
 
     try {
-      await api.post("/ai/save-itinerary", { itinerary });
+      await api.post("/ai/save-itinerary", {
+        formData,
+        itinerary,
+      });
+
       pushMessage("ai", "Your itinerary has been saved successfully.");
       setShowActions(false);
     } catch (error: any) {
@@ -132,8 +252,12 @@ export default function FloatingAIChat({ isOpen, onClose }: Props) {
     if (!itinerary) return;
 
     try {
-      await api.post("/ai/send-itinerary-to-admin", { itinerary });
-      pushMessage("ai", "Your itinerary has been sent to admin.");
+      await api.post("/ai/send-itinerary-to-admin", {
+        formData,
+        itinerary,
+      });
+
+      pushMessage("ai", "Your itinerary has been sent to admin successfully.");
       setShowActions(false);
     } catch (error: any) {
       pushMessage(
@@ -141,6 +265,22 @@ export default function FloatingAIChat({ isOpen, onClose }: Props) {
         error?.response?.data?.message || "Failed to send itinerary to admin."
       );
     }
+  };
+
+  const handleRestart = () => {
+    setMessages([
+      {
+        id: "m1",
+        sender: "ai",
+        text: steps[0].question,
+      },
+    ]);
+    setInput("");
+    setLoading(false);
+    setItinerary(null);
+    setShowActions(false);
+    setStepIndex(0);
+    setFormData(initialForm);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -152,29 +292,37 @@ export default function FloatingAIChat({ isOpen, onClose }: Props) {
   if (!isOpen) return null;
 
   return (
-    <div className="floating-ai-chatbox">
+    <div className={`floating-ai-chatbox ${fullPage ? "floating-ai-chatbox--page" : ""}`}>
       <div className="floating-ai-header">
         <div>
-          <h3>Trip AI</h3>
+          <h3>PackPalz</h3>
           <p>Mood-based trip planner</p>
         </div>
 
-        <button className="floating-ai-close-btn" onClick={onClose} type="button">
-          <FiX />
-        </button>
+        {!fullPage && (
+          <button className="floating-ai-close-btn" onClick={onClose} type="button">
+            <FiX />
+          </button>
+        )}
       </div>
 
       <div className="floating-ai-messages">
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`floating-ai-message ${
-              message.sender === "ai" ? "ai" : "user"
-            }`}
+            className={`floating-ai-message ${message.sender === "ai" ? "ai" : "user"}`}
           >
             <div className="floating-ai-bubble">{message.text}</div>
           </div>
         ))}
+
+        {loading ? (
+          <div className="floating-ai-message ai">
+            <div className="floating-ai-bubble floating-ai-bubble--typing">
+              PackPalz is creating your itinerary...
+            </div>
+          </div>
+        ) : null}
 
         {itinerary ? (
           <div className="floating-ai-itinerary-card">
@@ -199,8 +347,7 @@ export default function FloatingAIChat({ isOpen, onClose }: Props) {
                     Day {day.dayNumber}: {day.title}
                   </h5>
                   <p>
-                    <strong>Activities:</strong>{" "}
-                    {day.activities?.join(", ") || "-"}
+                    <strong>Activities:</strong> {day.activities?.join(", ") || "-"}
                   </p>
                   <p>
                     <strong>Stay:</strong> {day.stay || "-"}
@@ -231,41 +378,35 @@ export default function FloatingAIChat({ isOpen, onClose }: Props) {
                 </button>
               </div>
             ) : null}
-          </div>
-        ) : null}
 
-        {loading ? (
-          <div className="floating-ai-message ai">
-            <div className="floating-ai-bubble floating-ai-bubble--typing">
-              Trip AI is typing...
-            </div>
+            <button type="button" className="floating-ai-restart-btn" onClick={handleRestart}>
+              Plan another trip
+            </button>
           </div>
         ) : null}
 
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="floating-ai-inputbar">
-        <input
-          type="text"
-          placeholder="Type your message..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-        <button type="button" onClick={handleSend} disabled={loading}>
-          <FiSend />
-        </button>
-      </div>
+      {!itinerary && (
+        <div className="floating-ai-inputbar">
+          <input
+            type="text"
+            placeholder="Type your answer..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <button type="button" onClick={handleSend} disabled={loading}>
+            <FiSend />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-export function FloatingAIButton({
-  onClick,
-}: {
-  onClick: () => void;
-}) {
+export function FloatingAIButton({ onClick }: { onClick: () => void }) {
   return (
     <button className="floating-ai-btn" onClick={onClick} type="button">
       <FiMessageCircle />

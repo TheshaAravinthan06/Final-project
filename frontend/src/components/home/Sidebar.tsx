@@ -301,59 +301,42 @@ export default function Sidebar({
             </div>
           )}
 
-          {isMoreOpen && activePanel === "appearance" && (
-            <div className="trip-more-menu trip-more-menu--appearance">
-              <div className="trip-more-menu__appearance-head">
-                <button
-                  type="button"
-                  className="trip-more-menu__back-btn"
-                  onClick={handleBackToMainMenu}
-                >
-                  <FiChevronLeft />
-                </button>
+{isMoreOpen && activePanel === "appearance" && (
+  <div className="trip-more-menu trip-more-menu--appearance">
+    <div className="trip-more-menu__appearance-head">
+      <button
+        type="button"
+        className="trip-more-menu__back-btn"
+        onClick={handleBackToMainMenu}
+      >
+        <FiChevronLeft />
+      </button>
 
-                <h4>Switch appearance</h4>
+      <h4>Switch appearance</h4>
 
-                <span className="trip-more-menu__appearance-icon">
-                  <FiSun />
-                </span>
-              </div>
+      <span className="trip-more-menu__appearance-icon">
+        <FiSun />
+      </span>
+    </div>
 
-              <div className="trip-more-menu__appearance-body">
-                <button
-                  type="button"
-                  className={`trip-theme-option ${
-                    theme === "light" ? "active" : ""
-                  }`}
-                  onClick={() => handleThemeChange("light")}
-                >
-                  <span className="trip-theme-option__left">
-                    <FiSun />
-                    <span>Light mode</span>
-                  </span>
-                  <span className="trip-theme-option__check">
-                    {theme === "light" ? "●" : ""}
-                  </span>
-                </button>
+    <div className="trip-more-menu__appearance-body">
+      <div className="trip-appearance-row">
+        <span className="trip-appearance-row__label">Dark mode</span>
 
-                <button
-                  type="button"
-                  className={`trip-theme-option ${
-                    theme === "dark" ? "active" : ""
-                  }`}
-                  onClick={() => handleThemeChange("dark")}
-                >
-                  <span className="trip-theme-option__left">
-                    <FiMoon />
-                    <span>Dark mode</span>
-                  </span>
-                  <span className="trip-theme-option__check">
-                    {theme === "dark" ? "●" : ""}
-                  </span>
-                </button>
-              </div>
-            </div>
-          )}
+        <button
+          type="button"
+          className={`trip-switch ${theme === "dark" ? "active" : ""}`}
+          onClick={() =>
+            handleThemeChange(theme === "dark" ? "light" : "dark")
+          }
+          aria-label="Toggle dark mode"
+        >
+          <span className="trip-switch__thumb" />
+        </button>
+      </div>
+    </div>
+  </div>
+)}
         </div>
       </aside>
 

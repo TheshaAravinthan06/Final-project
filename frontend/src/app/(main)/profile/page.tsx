@@ -7,6 +7,7 @@ import ProfilePostGrid from "@/components/profile/ProfilePostGrid";
 import ProfileReviews from "@/components/profile/ProfileReviews";
 import ProfileTravelHistory from "@/components/profile/ProfileTravelHistory";
 import ProfileGridModal from "@/components/profile/ProfileGridModal";
+import ProfileEditItemModal from "@/components/profile/ProfileEditItemModal";
 import {
   formatJoinedInterests,
   getImageSrc,
@@ -34,6 +35,10 @@ export default function MyProfilePage() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [editingItem, setEditingItem] = useState<ProfileGridItem | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
   useEffect(() => {
     const loadMyProfile = async () => {
       try {
@@ -42,7 +47,7 @@ export default function MyProfilePage() {
         setMessage("");
 
         const profileRes = await api.get("/users/me");
-        const myUser = profileRes.data?.user || null;
+        const myUser = profileRes.data?.user || profileRes.data || null;
         setProfile(myUser);
 
         if (!myUser?._id) {
@@ -58,22 +63,18 @@ export default function MyProfilePage() {
 
         const userPosts: ProfileGridItem[] =
           postsRes.status === "fulfilled"
-            ? (postsRes.value.data?.posts || []).map(
-                (post: UserProfilePost) => ({
-                  ...post,
-                  type: "post" as const,
-                })
-              )
+            ? (postsRes.value.data?.posts || []).map((post: UserProfilePost) => ({
+                ...post,
+                type: "post" as const,
+              }))
             : [];
 
         const userBlogs: ProfileGridItem[] =
           blogsRes.status === "fulfilled"
-            ? (blogsRes.value.data?.blogs || []).map(
-                (blog: UserProfileBlog) => ({
-                  ...blog,
-                  type: "blog" as const,
-                })
-              )
+            ? (blogsRes.value.data?.blogs || []).map((blog: UserProfileBlog) => ({
+                ...blog,
+                type: "blog" as const,
+              }))
             : [];
 
         const mergedItems = [...userPosts, ...userBlogs].sort((a, b) => {
@@ -85,7 +86,7 @@ export default function MyProfilePage() {
         setPosts(mergedItems);
 
         if (reviewsRes.status === "fulfilled") {
-          setReviews(reviewsRes.value.data?.reviews || []);
+          setReviews(reviewsRes.value.data?.reviews || reviewsRes.value.data || []);
         }
       } catch (err: any) {
         setError(err?.response?.data?.message || "Failed to load profile.");
@@ -101,6 +102,9 @@ export default function MyProfilePage() {
     () => formatJoinedInterests(profile?.travelInterest),
     [profile?.travelInterest]
   );
+
+  const selectedItem =
+    selectedIndex !== null && posts[selectedIndex] ? posts[selectedIndex] : null;
 
   const handleOpenItem = (item: ProfileGridItem) => {
     const index = posts.findIndex(
@@ -128,6 +132,87 @@ export default function MyProfilePage() {
     setSelectedIndex((selectedIndex + 1) % posts.length);
   };
 
+  const replaceItemInState = (updatedItem: ProfileGridItem) => {
+    setPosts((prev) =>
+      prev.map((item) =>
+        item._id === updatedItem._id && item.type === updatedItem.type
+          ? updatedItem
+          : item
+      )
+    );
+
+    if (selectedIndex !== null) {
+      setSelectedIndex((currentIndex) => {
+        if (currentIndex === null) return null;
+        const current = posts[currentIndex];
+        if (
+          current &&
+          current._id === updatedItem._id &&
+          current.type === updatedItem.type
+        ) {
+          return currentIndex;
+        }
+        return currentIndex;
+      });
+    }
+  };
+
+  const handleOpenEdit = (item: ProfileGridItem) => {
+    setEditingItem(item);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEdit = () => {
+    setEditingItem(null);
+    setIsEditModalOpen(false);
+  };
+
+  const handleSaveEdit = async (payload: FormData) => {
+    if (!editingItem) return;
+
+    try {
+      setIsSavingEdit(true);
+      setError("");
+      setMessage("");
+
+      if (editingItem.type === "blog") {
+        const res = await api.put(`/blogs/${editingItem._id}`, payload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        const updatedBlog = res.data?.blog;
+        if (updatedBlog) {
+          const updatedItem: ProfileGridItem = {
+            ...updatedBlog,
+            type: "blog",
+          };
+          replaceItemInState(updatedItem);
+          setMessage("Blog updated successfully.");
+        }
+      } else {
+        const res = await api.put(`/user-posts/${editingItem._id}`, payload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        const updatedPost = res.data?.post;
+        if (updatedPost) {
+          const updatedItem: ProfileGridItem = {
+            ...updatedPost,
+            type: "post",
+          };
+          replaceItemInState(updatedItem);
+          setMessage("Post updated successfully.");
+        }
+      }
+
+      handleCloseEdit();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to update item.");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const handleDeleteItem = async (item: ProfileGridItem) => {
     try {
       setError("");
@@ -135,13 +220,15 @@ export default function MyProfilePage() {
 
       if (item.type === "blog") {
         await api.delete(`/blogs/${item._id}`);
-        setPosts((prev) =>
-          prev.filter((p) => !(p._id === item._id && p.type === item.type))
-        );
         setMessage("Blog deleted successfully.");
       } else {
-        setError("Post delete endpoint is not available yet in backend.");
+        await api.delete(`/user-posts/${item._id}`);
+        setMessage("Post deleted successfully.");
       }
+
+      setPosts((prev) =>
+        prev.filter((p) => !(p._id === item._id && p.type === item.type))
+      );
 
       handleCloseModal();
     } catch (err: any) {
@@ -155,15 +242,43 @@ export default function MyProfilePage() {
       setMessage("");
 
       if (item.type === "blog") {
-        await api.patch(`/blogs/${item._id}/hide`);
-        setMessage("Blog hidden successfully.");
-      } else {
-        setError("Post hide endpoint is not available yet in backend.");
-      }
+        const res = await api.patch(`/blogs/${item._id}/visibility`);
+        const updatedBlog = res.data?.blog;
 
-      handleCloseModal();
+        if (updatedBlog) {
+          replaceItemInState({
+            ...updatedBlog,
+            type: "blog",
+          });
+        }
+
+        setMessage(
+          updatedBlog?.isPublished === false
+            ? "Blog hidden from users."
+            : "Blog visible to users again."
+        );
+      } else {
+        const res = await api.patch(`/user-posts/${item._id}/visibility`);
+        const updatedPost = res.data?.post;
+
+        if (updatedPost) {
+          replaceItemInState({
+            ...updatedPost,
+            type: "post",
+          });
+        }
+
+        setMessage(
+          updatedPost?.isPublished === false
+            ? "Post hidden from users."
+            : "Post visible to users again."
+        );
+      }
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to hide item.");
+      setError(
+        err?.response?.data?.message ||
+          "Failed to change visibility of item."
+      );
     }
   };
 
@@ -301,13 +416,22 @@ export default function MyProfilePage() {
 
       <ProfileGridModal
         open={isModalOpen}
-        item={selectedIndex !== null ? posts[selectedIndex] : null}
+        item={selectedItem}
         onClose={handleCloseModal}
         onPrev={handlePrevItem}
         onNext={handleNextItem}
         isOwnProfile
+        onEdit={handleOpenEdit}
         onHide={handleHideItem}
         onDelete={handleDeleteItem}
+      />
+
+      <ProfileEditItemModal
+        open={isEditModalOpen}
+        item={editingItem}
+        onClose={handleCloseEdit}
+        onSave={handleSaveEdit}
+        saving={isSavingEdit}
       />
     </section>
   );

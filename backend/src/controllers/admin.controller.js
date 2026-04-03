@@ -9,6 +9,10 @@ import TravelPick from "../models/travelPick.models.js";
 import Itinerary from "../models/itinerary.models.js";
 import ProblemReport from "../models/problemReport.models.js";
 
+
+// =============================
+// DASHBOARD
+// =============================
 export const adminDashboardStats = async (req, res) => {
   try {
     const [
@@ -16,186 +20,162 @@ export const adminDashboardStats = async (req, res) => {
       totalBookings,
       totalPackages,
       totalPlaces,
-      pendingItinerariesCount,
       payments,
-      allBookings,
+      bookings,
       recentBookings,
       recentPlaces,
       recentTravelPicks,
       pendingItineraries,
-      unreadNotifications,
-      totalReports,
     ] = await Promise.all([
       User.countDocuments(),
       Booking.countDocuments(),
       TravelPick.countDocuments(),
       Place.countDocuments(),
-      Itinerary.countDocuments({ status: "sent_to_admin" }),
-      Payment.find({}).sort({ createdAt: -1 }),
-      Booking.find()
-        .populate("travelPick", "title")
-        .sort({ createdAt: -1 }),
+      Payment.find({ status: "completed" }),
+      Booking.find().populate("travelPick", "title"),
       Booking.find()
         .populate("travelPick", "title")
         .sort({ createdAt: -1 })
         .limit(5),
-      Place.find().sort({ createdAt: -1 }).limit(4),
-      TravelPick.find().sort({ createdAt: -1 }).limit(4),
+      Place.find().sort({ createdAt: -1 }).limit(5),
+      TravelPick.find().sort({ createdAt: -1 }).limit(5),
       Itinerary.find({ status: "sent_to_admin" })
         .populate("user", "username")
         .sort({ createdAt: -1 })
         .limit(5),
-      AdminNotification.countDocuments({ isRead: false }),
-      PlaceReport.countDocuments(),
     ]);
 
-    const totalRevenue = payments
-      .filter((payment) => payment.status === "completed")
-      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    // 🔥 SUMMARY
+    const totalRevenue = payments.reduce(
+      (sum, p) => sum + Number(p.amount || 0),
+      0
+    );
 
-    const paymentStatus = [
-      {
-        name: "Advance Paid",
-        value: allBookings.filter((b) => b.paymentStatus === "advance_paid")
-          .length,
-      },
-      {
-        name: "Fully Paid",
-        value: allBookings.filter((b) => b.paymentStatus === "paid").length,
-      },
-      {
-        name: "Pending",
-        value: allBookings.filter(
-          (b) => b.paymentStatus === "pending" || b.paymentStatus === "unpaid"
-        ).length,
-      },
-      {
-        name: "Cancelled",
-        value: allBookings.filter((b) => b.bookingStatus === "cancelled")
-          .length,
-      },
-    ];
+    const summary = {
+      totalUsers,
+      totalBookings,
+      totalPackages,
+      totalPlaces,
+      pendingItineraries: pendingItineraries.length,
+      totalRevenue,
+    };
 
+    // 🔥 BOOKING TREND (last 6 months)
     const now = new Date();
     const bookingTrend = [];
 
     for (let i = 5; i >= 0; i--) {
-      const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const targetMonth = targetDate.getMonth();
-      const targetYear = targetDate.getFullYear();
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
 
-      const monthLabel = targetDate.toLocaleString("en-US", {
-        month: "short",
-      });
-
-      const monthBookings = allBookings.filter((booking) => {
-        const created = new Date(booking.createdAt);
+      const monthBookings = bookings.filter((b) => {
+        const d = new Date(b.createdAt);
         return (
-          created.getMonth() === targetMonth &&
-          created.getFullYear() === targetYear
+          d.getMonth() === date.getMonth() &&
+          d.getFullYear() === date.getFullYear()
         );
       });
 
-      const monthPayments = payments.filter((payment) => {
-        const created = new Date(payment.createdAt);
+      const monthPayments = payments.filter((p) => {
+        const d = new Date(p.createdAt);
         return (
-          payment.status === "completed" &&
-          created.getMonth() === targetMonth &&
-          created.getFullYear() === targetYear
+          d.getMonth() === date.getMonth() &&
+          d.getFullYear() === date.getFullYear()
         );
       });
 
       bookingTrend.push({
-        month: monthLabel,
+        month: date.toLocaleString("en-US", { month: "short" }),
         bookings: monthBookings.length,
         revenue: monthPayments.reduce(
-          (sum, payment) => sum + Number(payment.amount || 0),
+          (sum, p) => sum + Number(p.amount || 0),
           0
         ),
       });
     }
 
+    // 🔥 TOP PACKAGES
     const packageMap = {};
 
-    allBookings.forEach((booking) => {
-      const packageName = booking.travelPick?.title || "Package";
-      packageMap[packageName] = (packageMap[packageName] || 0) + 1;
+    bookings.forEach((b) => {
+      const name = b.travelPick?.title || "Package";
+      packageMap[name] = (packageMap[name] || 0) + 1;
     });
 
     const topPackages = Object.entries(packageMap)
-      .map(([name, bookings]) => ({
-        name,
-        bookings,
-      }))
+      .map(([name, bookings]) => ({ name, bookings }))
       .sort((a, b) => b.bookings - a.bookings)
       .slice(0, 5);
 
-    const recentTravelPicksWithCounts = recentTravelPicks.map((pick) => ({
-      _id: pick._id,
-      title: pick.title,
-      place: pick.place,
-      imageUrl: pick.imageUrl,
-      createdAt: pick.createdAt,
-      bookingCount: pick.bookingCount || 0,
-    }));
-
-    return res.status(200).json({
-      summary: {
-        totalUsers,
-        totalBookings,
-        totalPackages,
-        totalPlaces,
-        pendingItineraries: pendingItinerariesCount,
-        totalRevenue,
+    // 🔥 PAYMENT STATUS
+    const paymentStatus = [
+      {
+        name: "Advance Paid",
+        value: bookings.filter((b) => b.paymentStatus === "advance_paid").length,
       },
+      {
+        name: "Fully Paid",
+        value: bookings.filter((b) => b.paymentStatus === "paid").length,
+      },
+      {
+        name: "Pending",
+        value: bookings.filter(
+          (b) => b.paymentStatus === "pending" || b.paymentStatus === "unpaid"
+        ).length,
+      },
+      {
+        name: "Cancelled",
+        value: bookings.filter((b) => b.bookingStatus === "cancelled").length,
+      },
+    ];
+
+    // 🔥 RESPONSE (THIS IS THE IMPORTANT PART)
+    return res.status(200).json({
+      summary,
       bookingTrend,
       topPackages,
       paymentStatus,
       recentBookings,
       recentPlaces,
-      recentTravelPicks: recentTravelPicksWithCounts,
+      recentTravelPicks,
       pendingItineraries,
-      extraStats: {
-        unreadNotifications,
-        totalReports,
-      },
     });
   } catch (error) {
     console.error("adminDashboardStats error:", error);
-    return res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
+
+// =============================
+// USERS
+// =============================
 export const adminGetAllUsers = async (req, res) => {
   try {
     const users = await User.find()
-      .select(
-        "-password -resetPasswordToken -resetPasswordExpire -refreshTokenHash -refreshTokenExpire"
-      )
+      .select("-password -refreshTokenHash")
       .sort({ createdAt: -1 });
 
-    return res.status(200).json({ count: users.length, users });
+    res.status(200).json({ users });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const adminGetUserById = async (req, res) => {
   try {
     const { id } = req.params;
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid user id" });
+      return res.status(400).json({ message: "Invalid ID" });
     }
 
-    const user = await User.findById(id).select(
-      "-password -resetPasswordToken -resetPasswordExpire -refreshTokenHash -refreshTokenExpire"
-    );
+    const user = await User.findById(id).select("-password");
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    return res.status(200).json({ user });
+    res.status(200).json({ user });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -204,18 +184,8 @@ export const adminUpdateUserRole = async (req, res) => {
     const { id } = req.params;
     const { role } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid user id" });
-    }
-
-    if (!role || !["admin", "user"].includes(role)) {
-      return res.status(400).json({ message: "Role must be admin or user" });
-    }
-
-    if (req.user?._id?.toString() === id) {
-      return res
-        .status(400)
-        .json({ message: "You cannot change your own role" });
+    if (!["admin", "user"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role" });
     }
 
     const user = await User.findById(id);
@@ -224,171 +194,16 @@ export const adminUpdateUserRole = async (req, res) => {
     user.role = role;
     await user.save();
 
-    return res.status(200).json({
-      message: "Role updated successfully",
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-      },
-    });
+    res.status(200).json({ message: "Role updated", user });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
-export const adminGetNotifications = async (req, res) => {
-  try {
-    const { unreadOnly, type, limit } = req.query;
 
-    const filter = {};
-
-    if (String(unreadOnly).toLowerCase() === "true") {
-      filter.isRead = false;
-    }
-
-    if (type && type !== "all") {
-      filter.type = type;
-    }
-
-    const parsedLimit = Number(limit) > 0 ? Number(limit) : 100;
-
-    const notifications = await AdminNotification.find(filter)
-      .populate("actor", "username email profileImage")
-      .populate("place", "placeName imageUrl")
-      .sort({ createdAt: -1 })
-      .limit(parsedLimit);
-
-    const unreadCount = await AdminNotification.countDocuments({
-      isRead: false,
-    });
-
-    return res.status(200).json({
-      count: notifications.length,
-      unreadCount,
-      notifications,
-    });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-export const adminMarkNotificationRead = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const notification = await AdminNotification.findById(id);
-
-    if (!notification) {
-      return res.status(404).json({ message: "Notification not found" });
-    }
-
-    notification.isRead = true;
-    await notification.save();
-
-    return res.status(200).json({
-      message: "Notification marked as read",
-      notification,
-    });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-export const adminGetReports = async (req, res) => {
-  try {
-    const placeReports = await PlaceReport.find()
-      .populate("place", "placeName imageUrl isPublished createdBy")
-      .populate("reportedBy", "username email")
-      .sort({ createdAt: -1 });
-
-    const problemReports = await ProblemReport.find()
-      .populate("reportedBy", "username email")
-      .sort({ createdAt: -1 });
-
-    const normalizedPlaceReports = placeReports.map((item) => ({
-      _id: item._id,
-      reportKind: "place",
-      reason: item.reason || "",
-      status: item.status,
-      createdAt: item.createdAt,
-      place: item.place || null,
-      reportedBy: item.reportedBy || null,
-      subject: "",
-      message: "",
-    }));
-
-    const normalizedProblemReports = problemReports.map((item) => ({
-      _id: item._id,
-      reportKind: "problem",
-      reason: "",
-      status: item.status,
-      createdAt: item.createdAt,
-      place: null,
-      reportedBy: item.reportedBy || null,
-      subject: item.subject || "",
-      message: item.message || "",
-    }));
-
-    const reports = [...normalizedProblemReports, ...normalizedPlaceReports].sort(
-      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-    );
-
-    return res.status(200).json({
-      count: reports.length,
-      reports,
-    });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-export const adminTogglePlaceVisibility = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const place = await Place.findById(id);
-    if (!place) {
-      return res.status(404).json({ message: "Place not found" });
-    }
-
-    place.isPublished = !place.isPublished;
-    await place.save();
-
-    return res.status(200).json({
-      message: place.isPublished
-        ? "Place is now visible to users"
-        : "Place hidden from users",
-      place,
-    });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-export const adminToggleTravelPickVisibility = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const travelPick = await TravelPick.findById(id);
-    if (!travelPick) {
-      return res.status(404).json({ message: "Travel pick not found" });
-    }
-
-    travelPick.isPublished = !travelPick.isPublished;
-    await travelPick.save();
-
-    return res.status(200).json({
-      message: travelPick.isPublished
-        ? "Travel pick is now visible to users"
-        : "Travel pick hidden from users",
-      travelPick,
-    });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
+// =============================
+// 🔥 FIXED BLOCK USER (YOUR ERROR)
+// =============================
 export const adminBlockUser = async (req, res) => {
   try {
     const { id } = req.params;
@@ -403,16 +218,150 @@ export const adminBlockUser = async (req, res) => {
     user.isActive = false;
     await user.save();
 
-    return res.status(200).json({
+    res.status(200).json({
       message: "User blocked successfully",
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        isActive: user.isActive,
-      },
+      user,
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+// =============================
+// BOOKINGS (ADMIN VIEW)
+// =============================
+export const adminGetAllBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find()
+      .populate("user", "username email")
+      .populate(
+        "travelPick",
+        "title place startDate endDate imageUrl"
+      )
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      count: bookings.length,
+      bookings,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+// =============================
+// PAYMENTS (ADMIN VIEW)
+// =============================
+export const adminGetAllPayments = async (req, res) => {
+  try {
+    const payments = await Payment.find()
+      .populate("user", "username email")
+      .populate("booking")
+      .populate("travelPick", "title place")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      count: payments.length,
+      payments,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+// =============================
+// NOTIFICATIONS
+// =============================
+export const adminGetNotifications = async (req, res) => {
+  try {
+    const notifications = await AdminNotification.find()
+      .populate("actor", "username")
+      .populate("travelPick", "title")
+      .populate("booking")
+      .populate("payment")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      count: notifications.length,
+      notifications,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const adminMarkNotificationRead = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const notification = await AdminNotification.findById(id);
+    if (!notification)
+      return res.status(404).json({ message: "Not found" });
+
+    notification.isRead = true;
+    await notification.save();
+
+    res.status(200).json({ message: "Marked as read" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+// =============================
+// REPORTS
+// =============================
+export const adminGetReports = async (req, res) => {
+  try {
+    const placeReports = await PlaceReport.find()
+      .populate("place", "placeName")
+      .populate("reportedBy", "username");
+
+    const problemReports = await ProblemReport.find()
+      .populate("reportedBy", "username");
+
+    res.status(200).json({
+      placeReports,
+      problemReports,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+// =============================
+// TOGGLE VISIBILITY
+// =============================
+export const adminTogglePlaceVisibility = async (req, res) => {
+  try {
+    const place = await Place.findById(req.params.id);
+
+    if (!place) return res.status(404).json({ message: "Not found" });
+
+    place.isPublished = !place.isPublished;
+    await place.save();
+
+    res.status(200).json({ place });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const adminToggleTravelPickVisibility = async (req, res) => {
+  try {
+    const pick = await TravelPick.findById(req.params.id);
+
+    if (!pick) return res.status(404).json({ message: "Not found" });
+
+    pick.isPublished = !pick.isPublished;
+    await pick.save();
+
+    res.status(200).json({ pick });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

@@ -5,13 +5,17 @@ const blogSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      trim: true,
     },
     coverImage: {
       type: String,
       required: true,
+      trim: true,
     },
     excerpt: {
       type: String,
+      default: "",
+      trim: true,
     },
     content: {
       type: String,
@@ -19,11 +23,18 @@ const blogSchema = new mongoose.Schema(
     },
     location: {
       type: String,
+      default: "",
+      trim: true,
     },
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+    },
+
+    isPublished: {
+      type: Boolean,
+      default: true,
     },
 
     likes: [

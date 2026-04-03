@@ -5,7 +5,7 @@ import {
   getBlogById,
   getBlogsByUserId,
   updateBlog,
-  hideBlog,
+  toggleBlogVisibility,
   reportBlog,
   deleteBlog,
 } from "../controllers/userBlog.controller.js";
@@ -19,7 +19,7 @@ router.get("/", getAllBlogs);
 router.get("/user/:userId", getBlogsByUserId);
 router.get("/:id", getBlogById);
 router.put("/:id", protect, uploadBlogImage.single("coverImage"), updateBlog);
-router.patch("/:id/hide", protect, hideBlog);
+router.patch("/:id/visibility", protect, toggleBlogVisibility);
 router.post("/:id/report", protect, reportBlog);
 router.delete("/:id", protect, deleteBlog);
 

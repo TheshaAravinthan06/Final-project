@@ -30,16 +30,23 @@
 }
 
 .floating-ai-chatbox {
-  width: 380px;
+  width: 390px;
   max-width: calc(100vw - 24px);
-  height: 620px;
+  height: 640px;
   background: #ffffff;
   border: 1px solid #e7ece8;
-  border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(14, 32, 25, 0.2);
+  border-radius: 28px;
+  box-shadow: 0 24px 70px rgba(14, 32, 25, 0.22);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.floating-ai-chatbox--page {
+  width: 100%;
+  max-width: 100%;
+  height: 760px;
+  border-radius: 32px;
 }
 
 .floating-ai-header {
@@ -80,8 +87,10 @@
 .floating-ai-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
-  background: #f7faf8;
+  padding: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(68, 124, 97, 0.08), transparent 26%),
+    #f7faf8;
 }
 
 .floating-ai-message {
@@ -98,11 +107,11 @@
 }
 
 .floating-ai-bubble {
-  max-width: 82%;
-  padding: 12px 14px;
+  max-width: 84%;
+  padding: 13px 15px;
   border-radius: 18px;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.65;
   word-break: break-word;
 }
 
@@ -133,9 +142,9 @@
 
   input {
     flex: 1;
-    height: 48px;
+    height: 50px;
     border: 1px solid #dce5df;
-    border-radius: 14px;
+    border-radius: 15px;
     padding: 0 14px;
     font-size: 14px;
     outline: none;
@@ -150,10 +159,10 @@
   }
 
   button {
-    width: 48px;
-    height: 48px;
+    width: 50px;
+    height: 50px;
     border: none;
-    border-radius: 14px;
+    border-radius: 15px;
     background: linear-gradient(135deg, #17392d 0%, #295844 100%);
     color: #fff;
     display: grid;
@@ -170,8 +179,8 @@
 
 .floating-ai-itinerary-card {
   margin: 10px 0 14px;
-  padding: 14px;
-  border-radius: 20px;
+  padding: 16px;
+  border-radius: 22px;
   background: #ffffff;
   border: 1px solid #e6ede8;
 
@@ -187,7 +196,7 @@
   margin: 0 0 10px;
   font-size: 14px;
   color: #526a60;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .floating-ai-cost {
@@ -234,7 +243,7 @@
 
   button {
     flex: 1;
-    height: 42px;
+    height: 44px;
     border: none;
     border-radius: 12px;
     cursor: pointer;
@@ -249,6 +258,19 @@
   }
 }
 
+.floating-ai-restart-btn {
+  width: 100%;
+  margin-top: 12px;
+  height: 42px;
+  border: 1px solid #dce5df;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #17392d;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 @media (max-width: 640px) {
   .floating-ai-wrapper {
     right: 14px;
@@ -260,6 +282,10 @@
   .floating-ai-chatbox {
     width: 100%;
     height: 76vh;
+  }
+
+  .floating-ai-chatbox--page {
+    height: calc(100vh - 180px);
   }
 
   .floating-ai-btn {

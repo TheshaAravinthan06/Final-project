@@ -6,6 +6,7 @@ export type UserProfilePost = {
   createdAt?: string;
   likesCount?: number;
   commentsCount?: number;
+  isPublished?: boolean;
   type?: "post";
 };
 
@@ -19,6 +20,7 @@ export type UserProfileBlog = {
   createdAt?: string;
   likesCount?: number;
   commentsCount?: number;
+  isPublished?: boolean;
   type?: "blog";
 };
 

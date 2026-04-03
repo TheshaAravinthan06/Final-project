@@ -1,4 +1,28 @@
+import jwt from "jsonwebtoken";
 import UserBlog from "../models/userBlog.models.js";
+
+const getOptionalUserId = (req) => {
+  try {
+    let token = null;
+
+    if (req.cookies?.token) {
+      token = req.cookies.token;
+    }
+
+    if (!token && req.headers.authorization?.startsWith("Bearer ")) {
+      token = req.headers.authorization.split(" ")[1];
+    }
+
+    if (!token || !process.env.JWT_SECRET) {
+      return null;
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded?.id || null;
+  } catch {
+    return null;
+  }
+};
 
 const formatBlog = (blog) => ({
   _id: blog._id,
@@ -65,6 +89,8 @@ export const getAllBlogs = async (req, res) => {
 
 export const getBlogById = async (req, res) => {
   try {
+    const viewerId = getOptionalUserId(req);
+
     const blog = await UserBlog.findById(req.params.id).populate(
       "author",
       "username name profileImage"
@@ -74,7 +100,10 @@ export const getBlogById = async (req, res) => {
       return res.status(404).json({ message: "Blog not found" });
     }
 
-    if (blog.isPublished === false) {
+    const isOwner =
+      viewerId && String(blog.author?._id || blog.author) === String(viewerId);
+
+    if (blog.isPublished === false && !isOwner) {
       return res.status(404).json({ message: "Blog not found" });
     }
 
@@ -87,11 +116,14 @@ export const getBlogById = async (req, res) => {
 export const getBlogsByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
+    const viewerId = getOptionalUserId(req);
 
-    const blogs = await UserBlog.find({
-      author: userId,
-      isPublished: { $ne: false },
-    })
+    const query =
+      viewerId && String(viewerId) === String(userId)
+        ? { author: userId }
+        : { author: userId, isPublished: { $ne: false } };
+
+    const blogs = await UserBlog.find(query)
       .populate("author", "username name profileImage")
       .sort({ createdAt: -1 });
 
@@ -141,7 +173,7 @@ export const updateBlog = async (req, res) => {
   }
 };
 
-export const hideBlog = async (req, res) => {
+export const toggleBlogVisibility = async (req, res) => {
   try {
     const blog = await UserBlog.findById(req.params.id);
 
@@ -153,10 +185,21 @@ export const hideBlog = async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    blog.isPublished = false;
+    blog.isPublished = blog.isPublished === false ? true : false;
     await blog.save();
 
-    res.status(200).json({ message: "Blog hidden successfully" });
+    const updatedBlog = await UserBlog.findById(blog._id).populate(
+      "author",
+      "username name profileImage"
+    );
+
+    res.status(200).json({
+      message:
+        blog.isPublished === false
+          ? "Blog hidden successfully"
+          : "Blog visible to users again",
+      blog: formatBlog(updatedBlog),
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

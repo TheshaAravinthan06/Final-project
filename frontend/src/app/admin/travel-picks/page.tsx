@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/axios";
+import { useRouter } from "next/navigation";
+import { FiHeart, FiMessageCircle, FiPlus } from "react-icons/fi";
 import TravelPickModal from "@/components/admin/TravelPickModal";
 
 type TravelPick = {
@@ -9,11 +11,12 @@ type TravelPick = {
   title: string;
   place: string;
   imageUrl: string;
-  price: number;
-  startDate: string;
-  endDate: string;
   caption: string;
-  isPublished?: boolean;
+  likesCount?: number;
+  commentsCount?: number;
+  savesCount?: number;
+  isPublished: boolean;
+  createdAt: string;
 };
 
 const BACKEND_URL =
@@ -26,98 +29,136 @@ const getImageSrc = (imageUrl?: string) => {
 };
 
 export default function AdminTravelPicksPage() {
-  const [picks, setPicks] = useState<TravelPick[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const router = useRouter();
+
+  const [travelPicks, setTravelPicks] = useState<TravelPick[]>([]);
+  const [selectedPickId, setSelectedPickId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPicks = async () => {
+    const fetchTravelPicks = async () => {
       try {
         const res = await api.get("/travel-picks/admin/all");
-        setPicks(res.data.travelPicks || []);
+        setTravelPicks(res.data?.travelPicks || []);
       } catch (error) {
-        console.error("Failed to load travel picks:", error);
+        console.error("Failed to load admin travel picks:", error);
+        setTravelPicks([]);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchPicks();
+    fetchTravelPicks();
   }, []);
 
   const selectedIndex = useMemo(
-    () => picks.findIndex((item) => item._id === selectedId),
-    [picks, selectedId]
+    () => travelPicks.findIndex((item) => item._id === selectedPickId),
+    [travelPicks, selectedPickId]
   );
 
   const selectedPick =
-    selectedIndex >= 0 && selectedIndex < picks.length
-      ? picks[selectedIndex]
+    selectedIndex >= 0 && selectedIndex < travelPicks.length
+      ? travelPicks[selectedIndex]
       : null;
 
-  const handlePickUpdated = (updatedPick: TravelPick) => {
-    setPicks((prev) =>
+  const handleTravelPickUpdated = (updatedPick: TravelPick) => {
+    setTravelPicks((prev) =>
       prev.map((item) => (item._id === updatedPick._id ? updatedPick : item))
     );
   };
 
-  const handlePickDeleted = (pickId: string) => {
-    const nextPicks = picks.filter((item) => item._id !== pickId);
-    setPicks(nextPicks);
+  const handleTravelPickDeleted = (pickId: string) => {
+    const nextTravelPicks = travelPicks.filter((item) => item._id !== pickId);
+    setTravelPicks(nextTravelPicks);
 
-    if (!nextPicks.length) {
-      setSelectedId(null);
+    if (!nextTravelPicks.length) {
+      setSelectedPickId(null);
       return;
     }
 
     const fallbackIndex =
-      selectedIndex >= nextPicks.length ? nextPicks.length - 1 : selectedIndex;
+      selectedIndex >= nextTravelPicks.length
+        ? nextTravelPicks.length - 1
+        : selectedIndex;
 
-    setSelectedId(nextPicks[fallbackIndex]?._id || null);
+    setSelectedPickId(nextTravelPicks[fallbackIndex]?._id || null);
   };
+
+  if (loading) {
+    return (
+      <section className="admin-places-page">
+        <div className="admin-page-head">
+          <div>
+            <h1>Travel Picks</h1>
+            <p>Loading admin travel picks...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="admin-places-page">
       <div className="admin-page-head">
         <div>
           <h1>Travel Picks</h1>
-          <p>Manage your packages</p>
+          <p>Hover to see likes and comments. Click any package to manage it.</p>
         </div>
+
+        <button
+          type="button"
+          className="admin-page-add-btn"
+          onClick={() => router.push("/admin/travel-picks/new")}
+        >
+          <FiPlus />
+          Add Package
+        </button>
       </div>
 
       <div className="admin-place-grid">
-        {picks.map((pick) => (
-          <div
+        {travelPicks.map((pick) => (
+          <button
             key={pick._id}
+            type="button"
             className="admin-place-grid__item"
-            onClick={() => setSelectedId(pick._id)}
+            onClick={() => setSelectedPickId(pick._id)}
           >
             <img src={getImageSrc(pick.imageUrl)} alt={pick.title} />
 
             <div className="admin-place-grid__overlay">
               <div className="admin-place-grid__stats">
-                <span>{pick.title}</span>
+                <span>
+                  <FiHeart />
+                  {pick.likesCount || 0}
+                </span>
+                <span>
+                  <FiMessageCircle />
+                  {pick.commentsCount || 0}
+                </span>
               </div>
             </div>
 
             {!pick.isPublished && (
               <span className="admin-place-grid__hidden-badge">Hidden</span>
             )}
-          </div>
+          </button>
         ))}
       </div>
 
       {selectedPick && (
         <TravelPickModal
           pickId={selectedPick._id}
-          onClose={() => setSelectedId(null)}
-          onTravelPickUpdated={handlePickUpdated}
-          onTravelPickDeleted={handlePickDeleted}
+          onClose={() => setSelectedPickId(null)}
+          onTravelPickUpdated={handleTravelPickUpdated}
+          onTravelPickDeleted={handleTravelPickDeleted}
           onPrev={
             selectedIndex > 0
-              ? () => setSelectedId(picks[selectedIndex - 1]._id)
+              ? () => setSelectedPickId(travelPicks[selectedIndex - 1]._id)
               : undefined
           }
           onNext={
-            selectedIndex < picks.length - 1
-              ? () => setSelectedId(picks[selectedIndex + 1]._id)
+            selectedIndex < travelPicks.length - 1
+              ? () => setSelectedPickId(travelPicks[selectedIndex + 1]._id)
               : undefined
           }
         />

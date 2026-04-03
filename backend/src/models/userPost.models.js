@@ -42,6 +42,11 @@ const userPostSchema = new mongoose.Schema(
       required: true,
     },
 
+    isPublished: {
+      type: Boolean,
+      default: true,
+    },
+
     likes: [
       {
         type: mongoose.Schema.Types.ObjectId,

@@ -1,6 +1,9 @@
+// FILE: backendfinal/src/controllers/payment.controller.js
+
 import mongoose from "mongoose";
 import Payment from "../models/payment.models.js";
 import Booking from "../models/booking.models.js";
+import AdminNotification from "../models/adminNotification.models.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -56,10 +59,14 @@ const syncBookingPaymentState = async (bookingId) => {
     (payment) => payment.paymentType === "balance"
   );
 
+  const hasFullCompleted = completedPayments.some(
+    (payment) => payment.paymentType === "full"
+  );
+
   if (refundedPayments.length > 0) {
     booking.paymentStatus = "refunded";
     booking.bookingStatus = "cancelled";
-  } else if (hasAdvanceCompleted && hasBalanceCompleted) {
+  } else if (hasFullCompleted || (hasAdvanceCompleted && hasBalanceCompleted)) {
     booking.paymentStatus = "paid";
     booking.bookingStatus = "confirmed";
   } else if (hasAdvanceCompleted) {
@@ -83,9 +90,9 @@ export const createPayment = async (req, res) => {
       return res.status(400).json({ message: "Valid booking id is required" });
     }
 
-    if (!paymentType || !["advance", "balance"].includes(paymentType)) {
+    if (!paymentType || !["advance", "balance", "full"].includes(paymentType)) {
       return res.status(400).json({
-        message: "Payment type must be either advance or balance",
+        message: "Payment type must be advance, balance, or full",
       });
     }
 
@@ -140,9 +147,15 @@ export const createPayment = async (req, res) => {
         status: "completed",
       });
 
-      if (existingAdvancePayment) {
+      const existingFullPayment = await Payment.findOne({
+        booking: booking._id,
+        paymentType: "full",
+        status: "completed",
+      });
+
+      if (existingAdvancePayment || existingFullPayment) {
         return res.status(400).json({
-          message: "Advance payment already exists for this booking",
+          message: "Advance or full payment already exists for this booking",
         });
       }
 
@@ -178,6 +191,34 @@ export const createPayment = async (req, res) => {
       amount = Number(booking.remainingAmount);
     }
 
+    if (paymentType === "full") {
+      if (booking.paymentStatus !== "unpaid") {
+        return res.status(400).json({
+          message: "Full payment is allowed only for unpaid bookings",
+        });
+      }
+
+      const existingFullPayment = await Payment.findOne({
+        booking: booking._id,
+        paymentType: "full",
+        status: "completed",
+      });
+
+      const existingAdvancePayment = await Payment.findOne({
+        booking: booking._id,
+        paymentType: "advance",
+        status: "completed",
+      });
+
+      if (existingFullPayment || existingAdvancePayment) {
+        return res.status(400).json({
+          message: "This booking already has a payment record",
+        });
+      }
+
+      amount = Number(booking.totalPrice);
+    }
+
     const payment = await Payment.create({
       booking: booking._id,
       user: req.user._id,
@@ -190,7 +231,18 @@ export const createPayment = async (req, res) => {
       status: "completed",
     });
 
-    await syncBookingPaymentState(booking._id);
+    const updatedBooking = await syncBookingPaymentState(booking._id);
+
+    await AdminNotification.create({
+      type: "payment_completed",
+      title: "New payment received",
+      message: `${req.user.username} made a ${paymentType} payment for ${booking.travelPick.title}.`,
+      actor: req.user._id,
+      booking: booking._id,
+      payment: payment._id,
+      travelPick: booking.travelPick._id,
+      isRead: false,
+    });
 
     const populatedPayment = await Payment.findById(payment._id)
       .populate("user", "username email")
@@ -206,6 +258,7 @@ export const createPayment = async (req, res) => {
     return res.status(201).json({
       message: "Payment recorded successfully",
       payment: formatPaymentResponse(populatedPayment),
+      booking: updatedBooking,
     });
   } catch (error) {
     console.error("createPayment error:", error);
@@ -275,7 +328,7 @@ export const adminGetAllPayments = async (req, res) => {
       .populate("user", "username email role")
       .populate(
         "booking",
-        "fullName email phone travelersCount totalPrice advanceAmount remainingAmount bookingStatus paymentStatus"
+        "fullName email phone travelersCount totalPrice advanceAmount remainingAmount bookingStatus paymentStatus balanceDueDate"
       )
       .populate(
         "travelPick",
@@ -304,7 +357,7 @@ export const adminGetPaymentById = async (req, res) => {
       .populate("user", "username email role")
       .populate(
         "booking",
-        "fullName email phone travelersCount totalPrice advanceAmount remainingAmount bookingStatus paymentStatus"
+        "fullName email phone travelersCount totalPrice advanceAmount remainingAmount bookingStatus paymentStatus balanceDueDate"
       )
       .populate(
         "travelPick",
@@ -375,7 +428,7 @@ export const adminUpdatePayment = async (req, res) => {
       .populate("user", "username email role")
       .populate(
         "booking",
-        "fullName email phone travelersCount totalPrice advanceAmount remainingAmount bookingStatus paymentStatus"
+        "fullName email phone travelersCount totalPrice advanceAmount remainingAmount bookingStatus paymentStatus balanceDueDate"
       )
       .populate(
         "travelPick",
@@ -417,4 +470,3 @@ export const adminDeletePayment = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
-
