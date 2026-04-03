@@ -1,5 +1,9 @@
 import mongoose from "mongoose";
 import TravelPick from "../models/travelPick.models.js";
+import User from "../models/user.models.js";
+import {
+  createBulkUserNotifications,
+} from "../utils/createUserNotification.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -132,6 +136,22 @@ export const createTravelPick = async (req, res) => {
       price: Number(price),
       isPublished: toBoolean(isPublished, true),
       createdBy: req.user._id,
+    });
+
+        const users = await User.find({
+      role: "user",
+      isActive: true,
+    }).select("_id");
+
+    await createBulkUserNotifications({
+      recipients: users.map((user) => user._id),
+      actor: req.user._id,
+      type: "travel_pick",
+      title: "New travel pick",
+      message: `A new travel pick "${title}" is now available`,
+      entityType: "travel_pick",
+      entityId: createdTravelPick._id,
+      previewImage: imageUrl,
     });
 
     const populatedTravelPick = await TravelPick.findById(

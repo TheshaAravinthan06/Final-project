@@ -1,130 +1,172 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { FiAlertCircle, FiSend, FiX } from "react-icons/fi";
-import api from "@/lib/axios";
+import { useEffect, useState } from "react";
+import { FiChevronDown, FiX } from "react-icons/fi";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
+  onSubmit?: (data: { subject: string; message: string }) => Promise<void> | void;
 };
 
-export default function ReportProblemModal({ isOpen, onClose }: Props) {
-  const [subject, setSubject] = useState("");
+const AREA_OPTIONS = [
+  "Home",
+  "Profile",
+  "Travel Picks",
+  "AI Planner",
+  "Notifications",
+  "Messages",
+  "Settings",
+  "Other",
+];
+
+export default function ReportProblemModal({
+  isOpen,
+  onClose,
+  onSubmit,
+}: Props) {
+  const [subject, setSubject] = useState("Home");
   const [message, setMessage] = useState("");
-  const [sending, setSending] = useState(false);
-  const [success, setSuccess] = useState("");
-  const [error, setError] = useState("");
+  const [showAreaOptions, setShowAreaOptions] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
-      setSubject("");
       setMessage("");
-      setSending(false);
-      setSuccess("");
-      setError("");
+      setSubject("Home");
+      setShowAreaOptions(false);
+      setIsSubmitting(false);
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-
-    if (!subject.trim() || !message.trim()) {
-      setError("Please fill in both subject and message.");
-      return;
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", handleEscape);
     }
 
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async () => {
+    if (!message.trim()) return;
+
     try {
-      setSending(true);
-      setError("");
-      setSuccess("");
+      setIsSubmitting(true);
 
-      await api.post("/users/report-problem", {
-        subject: subject.trim(),
-        message: message.trim(),
-      });
+      if (onSubmit) {
+        await onSubmit({
+          subject,
+          message: message.trim(),
+        });
+      }
 
-      setSuccess("Your report has been sent to admin.");
-      setSubject("");
-      setMessage("");
-
-      setTimeout(() => {
-        onClose();
-      }, 1000);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to send report.");
+      onClose();
+    } catch (error) {
+      console.error("Problem report submit failed:", error);
     } finally {
-      setSending(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="report-problem-modal-backdrop" onClick={onClose}>
+    <div className="report-problem-backdrop" onClick={onClose}>
       <div
         className="report-problem-modal"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="report-problem-modal__head">
-          <div className="report-problem-modal__title">
-            <span className="report-problem-modal__icon">
-              <FiAlertCircle />
-            </span>
-            <h3>Report a problem</h3>
-          </div>
-
+        <div className="report-problem-modal__header">
+          <h2 className="report-problem-modal__title">Report a problem</h2>
           <button
             type="button"
             className="report-problem-modal__close"
             onClick={onClose}
+            aria-label="Close"
           >
             <FiX />
           </button>
         </div>
 
-        {(error || success) && (
-          <div
-            className={`report-problem-modal__alert ${
-              error ? "error" : "success"
-            }`}
-          >
-            {error || success}
-          </div>
-        )}
-
-        <form className="report-problem-modal__form" onSubmit={handleSubmit}>
+        <div className="report-problem-modal__body">
           <div className="report-problem-modal__field">
-            <label>Subject</label>
-            <input
-              type="text"
-              placeholder="Write the issue title"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-            />
-          </div>
-
-          <div className="report-problem-modal__field">
-            <label>Message</label>
+            <label className="report-problem-modal__label">
+              Explain what is not working
+            </label>
             <textarea
-              rows={6}
-              placeholder="Explain the problem clearly"
+              className="report-problem-modal__textarea"
+              placeholder="Tell us what happened. Please include what you were doing when the issue occurred."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
+              rows={6}
             />
           </div>
 
-          <div className="report-problem-modal__actions">
-            <button type="button" className="secondary" onClick={onClose}>
-              Cancel
-            </button>
-
-            <button type="submit" className="primary" disabled={sending}>
-              <FiSend />
-              {sending ? "Sending..." : "Send report"}
-            </button>
+          <div className="report-problem-modal__helper">
+            Please avoid sharing passwords, payment details, or other sensitive
+            information.
           </div>
-        </form>
+
+          <div className="report-problem-modal__field">
+            <label className="report-problem-modal__label">
+              Where did this happen?
+            </label>
+
+            <div className="report-problem-select">
+              <button
+                type="button"
+                className="report-problem-select__trigger"
+                onClick={() => setShowAreaOptions((prev) => !prev)}
+              >
+                <span>{subject}</span>
+                <FiChevronDown
+                  className={`report-problem-select__icon ${
+                    showAreaOptions ? "is-open" : ""
+                  }`}
+                />
+              </button>
+
+              {showAreaOptions && (
+                <div className="report-problem-select__menu">
+                  {AREA_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      className={`report-problem-select__option ${
+                        subject === option ? "is-active" : ""
+                      }`}
+                      onClick={() => {
+                        setSubject(option);
+                        setShowAreaOptions(false);
+                      }}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="report-problem-modal__footer">
+          <button
+            type="button"
+            className="report-problem-modal__submit"
+            onClick={handleSubmit}
+            disabled={!message.trim() || isSubmitting}
+          >
+            {isSubmitting ? "Submitting..." : "Submit Report"}
+          </button>
+        </div>
       </div>
     </div>
   );

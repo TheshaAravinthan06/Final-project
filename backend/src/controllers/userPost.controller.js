@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import UserPost from "../models/userPost.models.js";
+import { createUserNotification } from "../utils/createUserNotification.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -284,6 +285,19 @@ export const likeUserPost = async (req, res) => {
     post.likes.push(req.user._id);
     await post.save();
 
+    if (String(post.createdBy?._id || post.createdBy) !== String(req.user._id)) {
+      await createUserNotification({
+        recipient: post.createdBy?._id || post.createdBy,
+        actor: req.user._id,
+        type: "like",
+        title: "New like",
+        message: `${req.user.username} liked your post`,
+        entityType: "post",
+        entityId: post._id,
+        previewImage: post.imageUrl || "",
+      });
+    }
+
     return res.status(200).json({
       message: "Post liked successfully",
       post: formatUserPost(post, req.user._id),
@@ -424,18 +438,36 @@ export const addCommentToUserPost = async (req, res) => {
       return res.status(400).json({ message: "Comment text is required" });
     }
 
-    const post = await UserPost.findById(id);
+    const post = await UserPost.findById(id).populate(
+      "createdBy",
+      "username name profileImage"
+    );
 
     if (!post || post.isPublished === false) {
       return res.status(404).json({ message: "Post not found" });
     }
 
+    const trimmedText = text.trim();
+
     post.comments.push({
       user: req.user._id,
-      text: text.trim(),
+      text: trimmedText,
     });
 
     await post.save();
+
+    if (String(post.createdBy?._id || post.createdBy) !== String(req.user._id)) {
+      await createUserNotification({
+        recipient: post.createdBy?._id || post.createdBy,
+        actor: req.user._id,
+        type: "comment",
+        title: "New comment",
+        message: `${req.user.username} commented on your post`,
+        entityType: "post",
+        entityId: post._id,
+        previewImage: post.imageUrl || "",
+      });
+    }
 
     const updatedPost = await UserPost.findById(id)
       .populate("createdBy", "username name profileImage")

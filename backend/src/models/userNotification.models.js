@@ -22,6 +22,9 @@ const userNotificationSchema = new mongoose.Schema(
         "reply",
         "like",
         "system",
+        "travel_pick",
+        "payment",
+        "booking",
       ],
       required: true,
     },
@@ -40,7 +43,16 @@ const userNotificationSchema = new mongoose.Schema(
 
     entityType: {
       type: String,
-      enum: ["user", "place", "post", "itinerary", "none"],
+      enum: [
+        "user",
+        "place",
+        "post",
+        "travel_pick",
+        "booking",
+        "payment",
+        "itinerary",
+        "none",
+      ],
       default: "none",
     },
 

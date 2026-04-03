@@ -28,3 +28,38 @@ export const createUserNotification = async ({
     return null;
   }
 };
+
+export const createBulkUserNotifications = async ({
+  recipients = [],
+  actor = null,
+  type,
+  title,
+  message,
+  entityType = "none",
+  entityId = null,
+  previewImage = "",
+}) => {
+  try {
+    if (!Array.isArray(recipients) || recipients.length === 0) return [];
+
+    const docs = recipients
+      .filter(Boolean)
+      .map((recipient) => ({
+        recipient,
+        actor,
+        type,
+        title,
+        message,
+        entityType,
+        entityId,
+        previewImage,
+      }));
+
+    if (!docs.length) return [];
+
+    return await UserNotification.insertMany(docs);
+  } catch (error) {
+    console.error("createBulkUserNotifications error:", error.message);
+    return [];
+  }
+};

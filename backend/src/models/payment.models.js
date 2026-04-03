@@ -19,7 +19,7 @@ const paymentSchema = new mongoose.Schema(
     },
     paymentType: {
       type: String,
-      enum: ["advance", "balance"],
+      enum: ["advance", "balance", "full"],
       required: true,
     },
     amount: {
@@ -39,6 +39,16 @@ const paymentSchema = new mongoose.Schema(
       required: true,
     },
     transactionId: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    stripeCheckoutSessionId: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    stripePaymentIntentId: {
       type: String,
       trim: true,
       default: "",

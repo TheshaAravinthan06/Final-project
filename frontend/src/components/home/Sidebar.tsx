@@ -46,6 +46,7 @@ export default function Sidebar({
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
   const moreRef = useRef<HTMLDivElement | null>(null);
 
@@ -53,6 +54,59 @@ export default function Sidebar({
     initTheme();
     setTheme(getSavedTheme());
   }, []);
+
+useEffect(() => {
+  let intervalId: NodeJS.Timeout | null = null;
+
+  const hasClientToken = () => {
+    if (typeof window === "undefined") return false;
+
+    return Boolean(
+      localStorage.getItem("token") ||
+        sessionStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        sessionStorage.getItem("accessToken")
+    );
+  };
+
+  const fetchUnreadCount = async () => {
+    try {
+      if (!hasClientToken()) {
+        setUnreadNotificationCount(0);
+        return;
+      }
+
+      const res = await api.get("/notifications?limit=1");
+      setUnreadNotificationCount(Number(res.data.unreadCount || 0));
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
+        setUnreadNotificationCount(0);
+        return;
+      }
+
+      console.error("Failed to fetch unread notification count:", error);
+    }
+  };
+
+  const handleNotificationUpdate = (event: Event) => {
+    const customEvent = event as CustomEvent<{ unreadCount?: number }>;
+    const nextCount = Number(customEvent.detail?.unreadCount ?? 0);
+    setUnreadNotificationCount(nextCount);
+  };
+
+  fetchUnreadCount();
+  intervalId = setInterval(fetchUnreadCount, 30000);
+
+  window.addEventListener("notifications:updated", handleNotificationUpdate);
+
+  return () => {
+    if (intervalId) clearInterval(intervalId);
+    window.removeEventListener(
+      "notifications:updated",
+      handleNotificationUpdate
+    );
+  };
+}, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -203,7 +257,7 @@ export default function Sidebar({
               <span className="trip-nav__label">Create</span>
             </button>
 
-            <button
+                        <button
               type="button"
               className="trip-nav__item trip-nav__button"
               onClick={onOpenNotifications}
@@ -212,6 +266,14 @@ export default function Sidebar({
                 <span className="trip-nav__icon-box">
                   <FiBell className="trip-nav__icon" />
                 </span>
+
+                {unreadNotificationCount > 0 && (
+                  <span className="trip-nav__badge">
+                    {unreadNotificationCount > 99
+                      ? "99+"
+                      : unreadNotificationCount}
+                  </span>
+                )}
               </span>
               <span className="trip-nav__label">Notifications</span>
             </button>

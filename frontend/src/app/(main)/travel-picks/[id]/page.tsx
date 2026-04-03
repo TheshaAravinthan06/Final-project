@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import api from "@/lib/axios";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   FiArrowLeft,
   FiCalendar,
@@ -15,6 +15,7 @@ import {
   FiCoffee,
   FiFileText,
 } from "react-icons/fi";
+import TravelPickPaymentModal from "@/components/home/TravelPickPaymentModal";
 
 type TravelPick = {
   _id: string;
@@ -102,10 +103,14 @@ const getDurationLabel = (startDate?: string, endDate?: string) => {
 export default function TravelPickDetailsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const travelPickId = params?.id;
 
   const [pick, setPick] = useState<TravelPick | null>(null);
   const [loading, setLoading] = useState(true);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentMessage, setPaymentMessage] = useState("");
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
 
   useEffect(() => {
     const fetchTravelPick = async () => {
@@ -125,6 +130,44 @@ export default function TravelPickDetailsPage() {
 
     fetchTravelPick();
   }, [travelPickId]);
+
+  useEffect(() => {
+    const paymentState = searchParams.get("payment");
+    const sessionId = searchParams.get("session_id");
+
+    if (paymentState === "cancelled") {
+      setPaymentMessage("Payment was cancelled.");
+      return;
+    }
+
+    if (paymentState !== "success" || !sessionId || !travelPickId) return;
+
+    const verifyPayment = async () => {
+      try {
+        setVerifyingPayment(true);
+        const res = await api.get(
+          `/payments/verify-session?sessionId=${sessionId}`
+        );
+
+        if (res.data?.payment) {
+          setPaymentMessage("Payment successful. Your booking was confirmed.");
+        } else {
+          setPaymentMessage("Payment completed, but verification is pending.");
+        }
+
+        router.replace(`/travel-picks/${travelPickId}`);
+      } catch (error: any) {
+        console.error("Payment verification failed:", error);
+        setPaymentMessage(
+          error?.response?.data?.message || "Payment verification failed."
+        );
+      } finally {
+        setVerifyingPayment(false);
+      }
+    };
+
+    verifyPayment();
+  }, [searchParams, router, travelPickId]);
 
   const imageSrc = useMemo(() => getImageSrc(pick?.imageUrl), [pick?.imageUrl]);
   const durationLabel = useMemo(
@@ -176,13 +219,23 @@ export default function TravelPickDetailsPage() {
           </div>
         </div>
 
-        <div className="travel-pick-detail-hero-card">
-          <div className="travel-pick-detail-hero-card__image">
+        {paymentMessage ? (
+          <div className="travel-pick-payment-banner">{paymentMessage}</div>
+        ) : null}
+
+        {verifyingPayment ? (
+          <div className="travel-pick-payment-banner">
+            Verifying your payment...
+          </div>
+        ) : null}
+
+        <div className="travel-pick-detail-hero-wrap">
+          <div className="travel-pick-detail-hero">
             <img src={imageSrc} alt={pick.title} />
           </div>
 
-          <div className="travel-pick-detail-hero-card__content">
-            <div className="travel-pick-detail-head">
+          <div className="travel-pick-detail-head">
+            <div>
               <span className="travel-pick-detail-eyebrow">Book Now</span>
               <h1>{pick.title}</h1>
 
@@ -198,7 +251,9 @@ export default function TravelPickDetailsPage() {
                   {formatShortDate(pick.endDate)}
                 </span>
 
-                {pick.createdBy?.username && <span>by {pick.createdBy.username}</span>}
+                {pick.createdBy?.username && (
+                  <span>by {pick.createdBy.username}</span>
+                )}
               </div>
             </div>
 
@@ -210,72 +265,60 @@ export default function TravelPickDetailsPage() {
             </div>
 
             <p className="travel-pick-detail-caption">{pick.caption}</p>
-
-            <div className="travel-pick-detail-mini-grid">
-              <div className="travel-pick-detail-mini-card">
-                <span>Total Price</span>
-                <strong>{formatCurrency(pick.price)}</strong>
-              </div>
-
-              <div className="travel-pick-detail-mini-card">
-                <span>Advance ({pick.advancePercentage || 0}%)</span>
-                <strong>{formatCurrency(pick.advanceAmount)}</strong>
-              </div>
-
-              <div className="travel-pick-detail-mini-card">
-                <span>Remaining</span>
-                <strong>{formatCurrency(pick.remainingAmount)}</strong>
-              </div>
-            </div>
           </div>
 
-          <aside className="travel-pick-booking-card">
-            <div className="travel-pick-booking-card__top">
-              <p className="travel-pick-booking-card__label">Book Now / person</p>
-              <h2>{formatCurrency(pick.price)}</h2>
+          <aside className="travel-pick-detail-right travel-pick-detail-right--hero">
+            <div className="travel-pick-booking-card">
+              <div className="travel-pick-booking-card__top">
+                <p className="travel-pick-booking-card__label">
+                  Book now / person
+                </p>
+                <h2>{formatCurrency(pick.price)}</h2>
+              </div>
+
+              <div className="travel-pick-booking-card__section">
+                <div className="travel-pick-booking-row">
+                  <span>Total Price</span>
+                  <strong>{formatCurrency(pick.price)}</strong>
+                </div>
+
+                <div className="travel-pick-booking-row">
+                  <span>Advance ({pick.advancePercentage || 0}%)</span>
+                  <strong>{formatCurrency(pick.advanceAmount)}</strong>
+                </div>
+
+                <div className="travel-pick-booking-row">
+                  <span>Balance</span>
+                  <strong>{formatCurrency(pick.remainingAmount)}</strong>
+                </div>
+              </div>
+
+              {pick.advancePolicy && (
+                <div className="travel-pick-policy-box travel-pick-policy-box--good">
+                  <p>{pick.advancePolicy}</p>
+                </div>
+              )}
+
+              {pick.cancellationPolicy && (
+                <div className="travel-pick-policy-box travel-pick-policy-box--warn">
+                  <p>{pick.cancellationPolicy}</p>
+                </div>
+              )}
+
+              {pick.refundPolicy && (
+                <div className="travel-pick-policy-box travel-pick-policy-box--muted">
+                  <p>{pick.refundPolicy}</p>
+                </div>
+              )}
+
+              <button
+                className="travel-pick-detail-book-btn"
+                disabled={!pick.isBookingOpen}
+                onClick={() => setPaymentModalOpen(true)}
+              >
+                {pick.isBookingOpen ? "Book now" : "Booking closed"}
+              </button>
             </div>
-
-            <div className="travel-pick-booking-card__section">
-              <div className="travel-pick-booking-row">
-                <span>Total Price</span>
-                <strong>{formatCurrency(pick.price)}</strong>
-              </div>
-
-              <div className="travel-pick-booking-row">
-                <span>Advance ({pick.advancePercentage || 0}%)</span>
-                <strong>{formatCurrency(pick.advanceAmount)}</strong>
-              </div>
-
-              <div className="travel-pick-booking-row">
-                <span>Balance</span>
-                <strong>{formatCurrency(pick.remainingAmount)}</strong>
-              </div>
-            </div>
-
-            {pick.advancePolicy && (
-              <div className="travel-pick-policy-box travel-pick-policy-box--good">
-                <p>{pick.advancePolicy}</p>
-              </div>
-            )}
-
-            {pick.cancellationPolicy && (
-              <div className="travel-pick-policy-box travel-pick-policy-box--warn">
-                <p>{pick.cancellationPolicy}</p>
-              </div>
-            )}
-
-            {pick.refundPolicy && (
-              <div className="travel-pick-policy-box travel-pick-policy-box--muted">
-                <p>{pick.refundPolicy}</p>
-              </div>
-            )}
-
-            <button
-              className="travel-pick-detail-book-btn"
-              disabled={!pick.isBookingOpen}
-            >
-              {pick.isBookingOpen ? "Book now" : "Booking closed"}
-            </button>
           </aside>
         </div>
 
@@ -309,6 +352,7 @@ export default function TravelPickDetailsPage() {
                       <div className="travel-pick-place-card__thumb">
                         <img src={imageSrc} alt={place} />
                       </div>
+
                       <div className="travel-pick-place-card__content">
                         <h3>{place}</h3>
                         <p>Part of this package itinerary.</p>
@@ -322,7 +366,7 @@ export default function TravelPickDetailsPage() {
             {(pick.paymentInfo || pick.moreDetails) && (
               <div className="travel-pick-detail-card">
                 <div className="travel-pick-detail-card__head">
-                  <h2>Extra Details</h2>
+                  <h2>Payment Details & Extra Info</h2>
                 </div>
 
                 <div className="travel-pick-detail-list">
@@ -477,6 +521,12 @@ export default function TravelPickDetailsPage() {
           </div>
         </div>
       </div>
+
+      <TravelPickPaymentModal
+        open={paymentModalOpen}
+        pick={pick}
+        onClose={() => setPaymentModalOpen(false)}
+      />
     </section>
   );
 }

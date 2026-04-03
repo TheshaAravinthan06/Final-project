@@ -508,3 +508,458 @@ html[data-theme="dark"] .settings-theme-panel__item.active {
   background: #111827;
   color: #fff;
 }
+
+/* REPORT PROBLEM MODAL - COMPACT VERSION */
+
+.report-problem-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 2000;
+}
+
+.report-problem-modal {
+  width: min(100%, 440px); /* reduced size */
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.2);
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+
+  &__header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid #eef1f5;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 20px; /* reduced */
+    font-weight: 700;
+    color: #111827;
+    letter-spacing: -0.02em;
+  }
+
+  &__close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 999px;
+    background: #f4f6f8;
+    color: #111827;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 20px;
+
+    &:hover {
+      background: #e9edf2;
+      transform: scale(1.04);
+    }
+  }
+
+  &__body {
+    padding: 18px 20px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  &__textarea {
+    width: 100%;
+    min-height: 110px; /* reduced */
+    resize: vertical;
+    border: 1px solid #d8dee6;
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #111827;
+    background: #fcfcfd;
+    outline: none;
+    transition: all 0.2s ease;
+    font-family: inherit;
+
+    &::placeholder {
+      color: #8a94a6;
+    }
+
+    &:focus {
+      border-color: #7c8cf8;
+      box-shadow: 0 0 0 3px rgba(124, 140, 248, 0.12);
+      background: #ffffff;
+    }
+  }
+
+  &__helper {
+    font-size: 12px;
+    line-height: 1.4;
+    color: #6b7280;
+  }
+
+  &__footer {
+    padding: 14px 20px 20px;
+  }
+
+  &__submit {
+    width: 100%;
+    height: 48px; /* reduced */
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #5b67f6 0%, #4b59f0 100%);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 10px 24px rgba(75, 89, 240, 0.22);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 28px rgba(75, 89, 240, 0.28);
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+  }
+}
+
+/* SELECT DROPDOWN */
+
+.report-problem-select {
+  position: relative;
+
+  &__trigger {
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid #d8dee6;
+    border-radius: 14px;
+    background: #fcfcfd;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 14px;
+    color: #111827;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #ffffff;
+      border-color: #cfd6df;
+    }
+  }
+
+  &__icon {
+    font-size: 18px;
+    color: #4b5563;
+    transition: transform 0.2s ease;
+
+    &.is-open {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.14);
+    padding: 6px;
+    z-index: 20;
+  }
+
+  &__option {
+    width: 100%;
+    border: none;
+    background: transparent;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #111827;
+    cursor: pointer;
+    transition: all 0.18s ease;
+
+    &:hover {
+      background: #f3f6fb;
+    }
+
+    &.is-active {
+      background: #eef2ff;
+      color: #4352e8;
+      font-weight: 600;
+    }
+  }
+}
+
+/* MOBILE */
+
+@media (max-width: 640px) {
+  .report-problem-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .report-problem-modal {
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+
+    &__header {
+      padding: 16px;
+    }
+
+    &__title {
+      font-size: 18px;
+    }
+
+    &__body {
+      padding: 16px;
+    }
+
+    &__footer {
+      padding: 14px 16px 20px;
+    }
+
+    &__textarea {
+      min-height: 100px;
+    }
+  }
+}
+
+// TRAVEL PICK PAYMENT
+
+.travel-pick-payment-banner {
+  margin: 0 0 18px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid rgba(6, 95, 70, 0.14);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.travel-payment-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 4000;
+}
+
+.travel-payment-modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 28px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.2);
+  padding: 24px;
+}
+
+.travel-payment-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.travel-payment-modal__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0d3021;
+  margin-bottom: 6px;
+}
+
+.travel-payment-modal__head h2 {
+  font-size: 26px;
+  line-height: 1.15;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.travel-payment-modal__head span {
+  display: inline-block;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.travel-payment-modal__close {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.travel-payment-modal__summary {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 20px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.travel-payment-modal__summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.travel-payment-modal__summary-row + .travel-payment-modal__summary-row {
+  margin-top: 10px;
+}
+
+.travel-payment-modal__summary-row strong {
+  color: #111827;
+}
+
+.travel-payment-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.travel-payment-modal__payment-types {
+  display: flex;
+  gap: 10px;
+}
+
+.travel-payment-chip {
+  flex: 1;
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.travel-payment-chip.active {
+  background: #0d3021;
+  color: #ffffff;
+  border-color: #0d3021;
+}
+
+.travel-payment-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.travel-payment-field span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.travel-payment-field input,
+.travel-payment-field textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-size: 15px;
+  color: #111827;
+  background: #ffffff;
+  outline: none;
+}
+
+.travel-payment-field input:focus,
+.travel-payment-field textarea:focus {
+  border-color: #0d3021;
+  box-shadow: 0 0 0 3px rgba(13, 48, 33, 0.08);
+}
+
+.travel-payment-modal__error {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid rgba(185, 28, 28, 0.12);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.travel-payment-modal__submit {
+  min-height: 54px;
+  border-radius: 18px;
+  background: #0d3021;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  transition: opacity 0.2s ease;
+}
+
+.travel-payment-modal__submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .travel-payment-modal {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .travel-payment-modal__payment-types {
+    flex-direction: column;
+  }
+
+  .travel-payment-modal__head h2 {
+    font-size: 22px;
+  }
+}
