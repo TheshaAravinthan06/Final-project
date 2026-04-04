@@ -6,6 +6,7 @@ import {
   forgotPassword,
   resetPassword,
   refreshToken,
+  changePassword,
 } from "../controllers/auth.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
 import passport from "passport";
@@ -18,6 +19,7 @@ router.post("/refresh", refreshToken);
 router.post("/logout", logoutUser);
 router.post("/forgot-password", forgotPassword);
 router.put("/reset-password/:token", resetPassword);
+router.put("/change-password", protect, changePassword);
 
 router.get("/me", protect, (req, res) => {
   res.json({

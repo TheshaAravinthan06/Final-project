@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 import User from "../models/user.models.js";
 import UserPost from "../models/userPost.models.js";
+import UserBlog from "../models/userBlog.models.js";
+import TravelPick from "../models/travelPick.models.js";
+import Itinerary from "../models/itinerary.models.js";
 import fs from "fs";
 import Review from "../models/review.models.js";
 import { createUserNotification } from "../utils/createUserNotification.js";
@@ -51,6 +54,72 @@ const formatUserListItem = (user) => {
     work: user.work || "",
   };
 };
+
+const formatBlockedAccount = (user) => ({
+  _id: user._id,
+  username: user.username,
+  name: user.name || "",
+  profileImage: user.profileImage || "",
+  bio: user.bio || "",
+  location: user.location || "",
+  work: user.work || "",
+});
+
+const formatSavedPostCard = (post) => ({
+  _id: post._id,
+  imageUrl: post.imageUrl || "",
+  caption: post.caption || "",
+  location: post.location || "",
+  createdAt: post.createdAt,
+  createdBy: post.createdBy
+    ? {
+        _id: post.createdBy._id,
+        username: post.createdBy.username,
+        name: post.createdBy.name || "",
+        profileImage: post.createdBy.profileImage || "",
+      }
+    : null,
+});
+
+const formatSavedBlogCard = (blog) => ({
+  _id: blog._id,
+  title: blog.title || "",
+  coverImage: blog.coverImage || "",
+  excerpt: blog.excerpt || "",
+  location: blog.location || "",
+  createdAt: blog.createdAt,
+  author: blog.author
+    ? {
+        _id: blog.author._id,
+        username: blog.author.username,
+        name: blog.author.name || "",
+        profileImage: blog.author.profileImage || "",
+      }
+    : null,
+});
+
+const formatSavedTravelPickCard = (pick) => ({
+  _id: pick._id,
+  title: pick.title || "",
+  place: pick.place || "",
+  imageUrl: pick.imageUrl || "",
+  startDate: pick.startDate,
+  endDate: pick.endDate,
+  price: pick.price || 0,
+  createdAt: pick.createdAt,
+});
+
+const formatSavedItineraryCard = (itinerary) => ({
+  _id: itinerary._id,
+  generatedTitle: itinerary.generatedTitle || "",
+  generatedSummary: itinerary.generatedSummary || "",
+  estimatedCost: itinerary.estimatedCost || 0,
+  mood: itinerary.mood || "",
+  destination: itinerary.destination || "",
+  days: itinerary.days || 0,
+  status: itinerary.status || "generated",
+  createdAt: itinerary.createdAt,
+});
 
 // GET MY PROFILE
 export const getMyProfile = async (req, res) => {
@@ -322,6 +391,166 @@ export const getFollowingList = async (req, res) => {
     return res.status(200).json({
       count: user.following.length,
       following: user.following.map(formatUserListItem),
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const getBlockedAccounts = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate(
+      "blockedUsers",
+      "username name profileImage bio location work"
+    );
+
+    return res.status(200).json({
+      count: user?.blockedUsers?.length || 0,
+      blockedAccounts: (user?.blockedUsers || []).map(formatBlockedAccount),
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const blockUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+
+    if (String(req.user._id) === String(id)) {
+      return res.status(400).json({ message: "You cannot block yourself" });
+    }
+
+    const currentUser = await User.findById(req.user._id);
+    const userToBlock = await User.findById(id);
+
+    if (!currentUser || !userToBlock) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const alreadyBlocked = currentUser.blockedUsers.some(
+      (userId) => String(userId) === String(id)
+    );
+
+    if (alreadyBlocked) {
+      return res.status(400).json({ message: "User already blocked" });
+    }
+
+    currentUser.blockedUsers.push(userToBlock._id);
+
+    currentUser.following = currentUser.following.filter(
+      (userId) => String(userId) !== String(userToBlock._id)
+    );
+
+    currentUser.followers = currentUser.followers.filter(
+      (userId) => String(userId) !== String(userToBlock._id)
+    );
+
+    userToBlock.following = userToBlock.following.filter(
+      (userId) => String(userId) !== String(currentUser._id)
+    );
+
+    userToBlock.followers = userToBlock.followers.filter(
+      (userId) => String(userId) !== String(currentUser._id)
+    );
+
+    await currentUser.save();
+    await userToBlock.save();
+
+    return res.status(200).json({
+      message: "User blocked successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const unblockUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+
+    const currentUser = await User.findById(req.user._id);
+
+    if (!currentUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    currentUser.blockedUsers = currentUser.blockedUsers.filter(
+      (userId) => String(userId) !== String(id)
+    );
+
+    await currentUser.save();
+
+    return res.status(200).json({
+      message: "User unblocked successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const getMySavedCollections = async (req, res) => {
+  try {
+    const [savedPosts, savedBlogs, savedTravelPicks, savedItineraries] =
+      await Promise.all([
+        UserPost.find({
+          savedBy: req.user._id,
+          isPublished: { $ne: false },
+        })
+          .populate("createdBy", "username name profileImage")
+          .sort({ createdAt: -1 }),
+
+        UserBlog.find({
+          savedBy: req.user._id,
+          isPublished: { $ne: false },
+        })
+          .populate("author", "username name profileImage")
+          .sort({ createdAt: -1 }),
+
+        TravelPick.find({
+          savedBy: req.user._id,
+          isPublished: true,
+        })
+          .populate("createdBy", "username")
+          .sort({ createdAt: -1 }),
+
+        Itinerary.find({
+          user: req.user._id,
+          status: { $in: ["generated", "sent_to_admin", "approved", "rejected"] },
+        }).sort({ createdAt: -1 }),
+      ]);
+
+    return res.status(200).json({
+      collections: {
+        posts: {
+          title: "Posts",
+          count: savedPosts.length,
+          items: savedPosts.map(formatSavedPostCard),
+        },
+        blogs: {
+          title: "Blogs",
+          count: savedBlogs.length,
+          items: savedBlogs.map(formatSavedBlogCard),
+        },
+        travelPicks: {
+          title: "Travel Picks",
+          count: savedTravelPicks.length,
+          items: savedTravelPicks.map(formatSavedTravelPickCard),
+        },
+        itineraries: {
+          title: "AI Itineraries",
+          count: savedItineraries.length,
+          items: savedItineraries.map(formatSavedItineraryCard),
+        },
+      },
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });

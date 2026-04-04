@@ -44,6 +44,13 @@ const blogSchema = new mongoose.Schema(
       },
     ],
 
+    savedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
     comments: [
       {
         user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

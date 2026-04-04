@@ -116,12 +116,15 @@ export default function FloatingAIChat({
   const [showActions, setShowActions] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [formData, setFormData] = useState<PlannerForm>(initialForm);
+  const [toast, setToast] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, itinerary, isOpen]);
+
+  if (!isOpen) return null;
 
   const pushMessage = (sender: "ai" | "user", text: string) => {
     setMessages((prev) => [
@@ -132,6 +135,11 @@ export default function FloatingAIChat({
         text,
       },
     ]);
+  };
+
+  const showToast = (text: string) => {
+    setToast(text);
+    window.setTimeout(() => setToast(""), 1800);
   };
 
   const parseValueForStep = (stepKey: string, raw: string) => {
@@ -220,7 +228,7 @@ export default function FloatingAIChat({
 
     if (nextStepIndex < steps.length) {
       setStepIndex(nextStepIndex);
-      setTimeout(() => {
+      window.setTimeout(() => {
         pushMessage("ai", steps[nextStepIndex].question);
       }, 250);
       return;
@@ -239,6 +247,7 @@ export default function FloatingAIChat({
       });
 
       pushMessage("ai", "Your itinerary has been saved successfully.");
+      showToast("Saved to AI Itineraries");
       setShowActions(false);
     } catch (error: any) {
       pushMessage(
@@ -289,10 +298,14 @@ export default function FloatingAIChat({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className={`floating-ai-chatbox ${fullPage ? "floating-ai-chatbox--page" : ""}`}>
+    <div
+      className={`floating-ai-chatbox ${
+        fullPage ? "floating-ai-chatbox--page" : ""
+      }`}
+    >
+      {toast ? <div className="save-toast">{toast}</div> : null}
+
       <div className="floating-ai-header">
         <div>
           <h3>PackPalz</h3>
@@ -300,7 +313,11 @@ export default function FloatingAIChat({
         </div>
 
         {!fullPage && (
-          <button className="floating-ai-close-btn" onClick={onClose} type="button">
+          <button
+            className="floating-ai-close-btn"
+            onClick={onClose}
+            type="button"
+          >
             <FiX />
           </button>
         )}
@@ -310,7 +327,9 @@ export default function FloatingAIChat({
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`floating-ai-message ${message.sender === "ai" ? "ai" : "user"}`}
+            className={`floating-ai-message ${
+              message.sender === "ai" ? "ai" : "user"
+            }`}
           >
             <div className="floating-ai-bubble">{message.text}</div>
           </div>
@@ -347,7 +366,8 @@ export default function FloatingAIChat({
                     Day {day.dayNumber}: {day.title}
                   </h5>
                   <p>
-                    <strong>Activities:</strong> {day.activities?.join(", ") || "-"}
+                    <strong>Activities:</strong>{" "}
+                    {day.activities?.join(", ") || "-"}
                   </p>
                   <p>
                     <strong>Stay:</strong> {day.stay || "-"}
@@ -379,7 +399,11 @@ export default function FloatingAIChat({
               </div>
             ) : null}
 
-            <button type="button" className="floating-ai-restart-btn" onClick={handleRestart}>
+            <button
+              type="button"
+              className="floating-ai-restart-btn"
+              onClick={handleRestart}
+            >
               Plan another trip
             </button>
           </div>
@@ -406,7 +430,11 @@ export default function FloatingAIChat({
   );
 }
 
-export function FloatingAIButton({ onClick }: { onClick: () => void }) {
+export function FloatingAIButton({
+  onClick,
+}: {
+  onClick: () => void;
+}) {
   return (
     <button className="floating-ai-btn" onClick={onClick} type="button">
       <FiMessageCircle />

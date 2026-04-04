@@ -7,6 +7,8 @@ import {
   adminGetTravelPickById,
   updateTravelPick,
   deleteTravelPick,
+  saveTravelPick,
+  unsaveTravelPick,
 } from "../controllers/travelPick.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
 import { authorize } from "../middlewares/role.middleware.js";
@@ -34,6 +36,9 @@ router.patch(
 );
 
 router.delete("/:id", protect, authorize("admin"), deleteTravelPick);
+
+router.post("/:id/save", protect, saveTravelPick);
+router.post("/:id/unsave", protect, unsaveTravelPick);
 
 router.get("/", getAllTravelPicks);
 router.get("/:id", getTravelPickById);

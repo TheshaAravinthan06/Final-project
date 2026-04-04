@@ -1,3 +1,4 @@
+import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import TravelPick from "../models/travelPick.models.js";
 import User from "../models/user.models.js";
@@ -6,6 +7,29 @@ import {
 } from "../utils/createUserNotification.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+const getOptionalUserId = (req) => {
+  try {
+    let token = null;
+
+    if (req.cookies?.token) {
+      token = req.cookies.token;
+    }
+
+    if (!token && req.headers.authorization?.startsWith("Bearer ")) {
+      token = req.headers.authorization.split(" ")[1];
+    }
+
+    if (!token || !process.env.JWT_SECRET) {
+      return null;
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded?.id || null;
+  } catch {
+    return null;
+  }
+};
 
 const parseArrayField = (value) => {
   if (!value) return [];
@@ -40,7 +64,7 @@ const startOfToday = () => {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 };
 
-const formatTravelPickResponse = (travelPick) => {
+const formatTravelPickResponse = (travelPick, userId = null) => {
   const obj = travelPick.toObject ? travelPick.toObject() : travelPick;
 
   const advancePercentage = Number(obj.advancePercentage || 0);
@@ -67,6 +91,10 @@ const formatTravelPickResponse = (travelPick) => {
     bookingCloseDate,
     balanceDueDate,
     isBookingOpen,
+    savesCount: obj.savedBy?.length || 0,
+    isSaved: userId
+      ? (obj.savedBy || []).some((id) => String(id) === String(userId))
+      : false,
   };
 };
 
@@ -138,7 +166,7 @@ export const createTravelPick = async (req, res) => {
       createdBy: req.user._id,
     });
 
-        const users = await User.find({
+    const users = await User.find({
       role: "user",
       isActive: true,
     }).select("_id");
@@ -160,7 +188,7 @@ export const createTravelPick = async (req, res) => {
 
     return res.status(201).json({
       message: "Travel pick created successfully",
-      travelPick: formatTravelPickResponse(populatedTravelPick),
+      travelPick: formatTravelPickResponse(populatedTravelPick, req.user._id),
     });
   } catch (error) {
     console.error("createTravelPick error:", error);
@@ -171,13 +199,17 @@ export const createTravelPick = async (req, res) => {
 // PUBLIC - GET ALL PUBLISHED TRAVEL PICKS
 export const getAllTravelPicks = async (req, res) => {
   try {
+    const userId = getOptionalUserId(req);
+
     const travelPicks = await TravelPick.find({ isPublished: true })
       .populate("createdBy", "username")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
       count: travelPicks.length,
-      travelPicks: travelPicks.map((item) => formatTravelPickResponse(item)),
+      travelPicks: travelPicks.map((item) =>
+        formatTravelPickResponse(item, userId)
+      ),
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -188,6 +220,7 @@ export const getAllTravelPicks = async (req, res) => {
 export const getTravelPickById = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = getOptionalUserId(req);
 
     if (!isValidObjectId(id)) {
       return res.status(400).json({ message: "Invalid travel pick id" });
@@ -203,7 +236,7 @@ export const getTravelPickById = async (req, res) => {
     }
 
     return res.status(200).json({
-      travelPick: formatTravelPickResponse(travelPick),
+      travelPick: formatTravelPickResponse(travelPick, userId),
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -400,6 +433,75 @@ export const deleteTravelPick = async (req, res) => {
 
     return res.status(200).json({
       message: "Travel pick deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const saveTravelPick = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid travel pick id" });
+    }
+
+    const travelPick = await TravelPick.findOne({
+      _id: id,
+      isPublished: true,
+    }).populate("createdBy", "username");
+
+    if (!travelPick) {
+      return res.status(404).json({ message: "Travel pick not found" });
+    }
+
+    const alreadySaved = travelPick.savedBy.some(
+      (userId) => String(userId) === String(req.user._id)
+    );
+
+    if (alreadySaved) {
+      return res.status(400).json({ message: "Travel pick already saved" });
+    }
+
+    travelPick.savedBy.push(req.user._id);
+    await travelPick.save();
+
+    return res.status(200).json({
+      message: "Travel pick saved successfully",
+      travelPick: formatTravelPickResponse(travelPick, req.user._id),
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const unsaveTravelPick = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid travel pick id" });
+    }
+
+    const travelPick = await TravelPick.findById(id).populate(
+      "createdBy",
+      "username"
+    );
+
+    if (!travelPick) {
+      return res.status(404).json({ message: "Travel pick not found" });
+    }
+
+    travelPick.savedBy = travelPick.savedBy.filter(
+      (userId) => String(userId) !== String(req.user._id)
+    );
+
+    await travelPick.save();
+
+    return res.status(200).json({
+      message: "Travel pick unsaved successfully",
+      travelPick: formatTravelPickResponse(travelPick, req.user._id),
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });

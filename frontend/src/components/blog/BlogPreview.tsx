@@ -80,6 +80,7 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
   const [saved, setSaved] = useState(Boolean(blog.isSaved));
   const [likesCount, setLikesCount] = useState(blog.likesCount || 0);
   const [commentText, setCommentText] = useState("");
+  const [toast, setToast] = useState("");
 
   const [currentUserId, setCurrentUserId] = useState("");
   const [followLoading, setFollowLoading] = useState(false);
@@ -140,6 +141,11 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
     };
   }, [showMenu]);
 
+  const showToast = (text: string) => {
+    setToast(text);
+    window.setTimeout(() => setToast(""), 1800);
+  };
+
   const handleLike = async () => {
     const nextLiked = !liked;
     setLiked(nextLiked);
@@ -165,6 +171,7 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
     try {
       if (nextSaved) {
         await api.post(`/blogs/${blog._id}/save`);
+        showToast("Saved to Blogs");
       } else {
         await api.post(`/blogs/${blog._id}/unsave`);
       }
@@ -257,6 +264,18 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
     }
   };
 
+  const handleBlock = async () => {
+    if (!authorId) return;
+
+    try {
+      await api.post(`/users/${authorId}/block`);
+      setShowMenu(false);
+      window.location.reload();
+    } catch (error) {
+      console.error("Block failed:", error);
+    }
+  };
+
   const handleOwnEdit = () => {
     setShowMenu(false);
     router.push(`/blogs/edit/${blog._id}`);
@@ -275,6 +294,8 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
   return (
     <>
       <article className="blog-feed-card">
+        {toast ? <div className="save-toast">{toast}</div> : null}
+
         <div className="blog-feed-card__header">
           <div className="blog-feed-card__user">
             <img src={avatarSrc} alt={username} />
@@ -336,6 +357,11 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
                     <button type="button" onClick={handleReport}>
                       <FiAlertTriangle />
                       Report
+                    </button>
+
+                    <button type="button" onClick={handleBlock}>
+                      <FiUserMinus />
+                      Block account
                     </button>
 
                     {isFollowing && (

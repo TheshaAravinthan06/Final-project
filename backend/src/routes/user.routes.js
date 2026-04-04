@@ -14,12 +14,19 @@ import {
   getReviewsOfUser,
   deleteMyReview,
   createProblemReport,
+  getBlockedAccounts,
+  blockUser,
+  unblockUser,
+  getMySavedCollections,
 } from "../controllers/user.controller.js";
 
 const router = express.Router();
 
 router.get("/me", protect, getMyProfile);
 router.put("/me", protect, updateMyProfile);
+router.get("/me/blocked-accounts", protect, getBlockedAccounts);
+router.get("/me/saved-collections", protect, getMySavedCollections);
+
 router.post("/report-problem", protect, createProblemReport);
 
 router.post(
@@ -31,6 +38,9 @@ router.post(
 
 router.post("/:id/follow", protect, followUser);
 router.post("/:id/unfollow", protect, unfollowUser);
+
+router.post("/:id/block", protect, blockUser);
+router.post("/:id/unblock", protect, unblockUser);
 
 router.get("/:id/followers", getFollowersList);
 router.get("/:id/following", getFollowingList);

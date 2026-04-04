@@ -18,8 +18,7 @@ import aiRoutes from "./routes/ai.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import searchRoutes from "./routes/search.routes.js";
 import blogRoutes from "./routes/userBlog.routes.js";
-
-
+import conversationRoutes from "./routes/conversation.routes.js";
 
 const app = express();
 
@@ -74,5 +73,6 @@ app.use("/ai", aiRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/search", searchRoutes);
 app.use("/blogs", blogRoutes);
+app.use("/conversations", conversationRoutes);
 
 export default app;

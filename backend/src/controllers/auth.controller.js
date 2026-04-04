@@ -237,6 +237,79 @@ export const logoutUser = async (req, res) => {
   }
 };
 
+// CHANGE PASSWORD
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user || !user.isActive) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.googleId && !user.password) {
+      return res.status(400).json({
+        message: "Password change is not available for Google-only accounts",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        message: "New password must be at least 8 characters",
+      });
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({ message: "New passwords do not match" });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        message: "New password must be different from current password",
+      });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+
+    user.refreshTokenHash = undefined;
+    user.refreshTokenExpire = undefined;
+
+    await user.save();
+
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "strict",
+    });
+
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "strict",
+    });
+
+    return res.status(200).json({
+      message: "Password changed successfully. Please log in again.",
+    });
+  } catch (error) {
+    console.error("CHANGE PASSWORD ERROR:", error);
+    return res.status(500).json({
+      message: error.message || "Server error during password change",
+    });
+  }
+};
+
 // FORGOT PASSWORD
 export const forgotPassword = async (req, res) => {
   try {

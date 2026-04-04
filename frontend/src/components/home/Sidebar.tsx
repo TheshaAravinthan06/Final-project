@@ -17,7 +17,7 @@ import {
   FiLogOut,
   FiSearch,
   FiChevronLeft,
-  FiMoon,
+  FiSend,
 } from "react-icons/fi";
 import CreateMenu from "@/components/create/CreateMenu";
 import CreatePostModal from "@/components/create/CreatePostModal";
@@ -47,6 +47,7 @@ export default function Sidebar({
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   const moreRef = useRef<HTMLDivElement | null>(null);
 
@@ -55,58 +56,54 @@ export default function Sidebar({
     setTheme(getSavedTheme());
   }, []);
 
-useEffect(() => {
-  let intervalId: NodeJS.Timeout | null = null;
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
 
-  const hasClientToken = () => {
-    if (typeof window === "undefined") return false;
 
-    return Boolean(
-      localStorage.getItem("token") ||
-        sessionStorage.getItem("token") ||
-        localStorage.getItem("accessToken") ||
-        sessionStorage.getItem("accessToken")
+    const fetchCounts = async () => {
+  try {
+    const [notificationRes, messageRes] = await Promise.all([
+      api.get("/notifications?limit=1"),
+      api.get("/conversations/unread-summary"),
+    ]);
+
+    setUnreadNotificationCount(
+      Number(notificationRes.data.unreadCount || 0)
     );
-  };
 
-  const fetchUnreadCount = async () => {
-    try {
-      if (!hasClientToken()) {
-        setUnreadNotificationCount(0);
-        return;
-      }
-
-      const res = await api.get("/notifications?limit=1");
-      setUnreadNotificationCount(Number(res.data.unreadCount || 0));
-    } catch (error: any) {
-      if (error?.response?.status === 401) {
-        setUnreadNotificationCount(0);
-        return;
-      }
-
-      console.error("Failed to fetch unread notification count:", error);
+    setUnreadMessageCount(
+      Number(messageRes.data.totalBadgeCount || 0)
+    );
+  } catch (error: any) {
+    if (error?.response?.status === 401) {
+      setUnreadNotificationCount(0);
+      setUnreadMessageCount(0);
+      return;
     }
-  };
 
-  const handleNotificationUpdate = (event: Event) => {
-    const customEvent = event as CustomEvent<{ unreadCount?: number }>;
-    const nextCount = Number(customEvent.detail?.unreadCount ?? 0);
-    setUnreadNotificationCount(nextCount);
-  };
+    console.error("Failed to fetch sidebar counts:", error);
+  }
+};
 
-  fetchUnreadCount();
-  intervalId = setInterval(fetchUnreadCount, 30000);
+    const handleNotificationUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{ unreadCount?: number }>;
+      const nextCount = Number(customEvent.detail?.unreadCount ?? 0);
+      setUnreadNotificationCount(nextCount);
+    };
 
-  window.addEventListener("notifications:updated", handleNotificationUpdate);
+    fetchCounts();
+    intervalId = setInterval(fetchCounts, 15000);
 
-  return () => {
-    if (intervalId) clearInterval(intervalId);
-    window.removeEventListener(
-      "notifications:updated",
-      handleNotificationUpdate
-    );
-  };
-}, []);
+    window.addEventListener("notifications:updated", handleNotificationUpdate);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      window.removeEventListener(
+        "notifications:updated",
+        handleNotificationUpdate
+      );
+    };
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -242,6 +239,26 @@ useEffect(() => {
               <span className="trip-nav__label">Search</span>
             </button>
 
+            <Link
+              href="/messages"
+              className={`trip-nav__item ${
+                pathname === "/messages" ? "active" : ""
+              }`}
+            >
+              <span className="trip-nav__icon-wrap">
+                <span className="trip-nav__icon-box">
+                  <FiSend className="trip-nav__icon" />
+                </span>
+
+                {unreadMessageCount > 0 && (
+                  <span className="trip-nav__badge">
+                    {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
+                  </span>
+                )}
+              </span>
+              <span className="trip-nav__label">Messages</span>
+            </Link>
+
             <button
               type="button"
               className={`trip-nav__item trip-nav__button ${
@@ -257,7 +274,7 @@ useEffect(() => {
               <span className="trip-nav__label">Create</span>
             </button>
 
-                        <button
+            <button
               type="button"
               className="trip-nav__item trip-nav__button"
               onClick={onOpenNotifications}
@@ -363,42 +380,42 @@ useEffect(() => {
             </div>
           )}
 
-{isMoreOpen && activePanel === "appearance" && (
-  <div className="trip-more-menu trip-more-menu--appearance">
-    <div className="trip-more-menu__appearance-head">
-      <button
-        type="button"
-        className="trip-more-menu__back-btn"
-        onClick={handleBackToMainMenu}
-      >
-        <FiChevronLeft />
-      </button>
+          {isMoreOpen && activePanel === "appearance" && (
+            <div className="trip-more-menu trip-more-menu--appearance">
+              <div className="trip-more-menu__appearance-head">
+                <button
+                  type="button"
+                  className="trip-more-menu__back-btn"
+                  onClick={handleBackToMainMenu}
+                >
+                  <FiChevronLeft />
+                </button>
 
-      <h4>Switch appearance</h4>
+                <h4>Switch appearance</h4>
 
-      <span className="trip-more-menu__appearance-icon">
-        <FiSun />
-      </span>
-    </div>
+                <span className="trip-more-menu__appearance-icon">
+                  <FiSun />
+                </span>
+              </div>
 
-    <div className="trip-more-menu__appearance-body">
-      <div className="trip-appearance-row">
-        <span className="trip-appearance-row__label">Dark mode</span>
+              <div className="trip-more-menu__appearance-body">
+                <div className="trip-appearance-row">
+                  <span className="trip-appearance-row__label">Dark mode</span>
 
-        <button
-          type="button"
-          className={`trip-switch ${theme === "dark" ? "active" : ""}`}
-          onClick={() =>
-            handleThemeChange(theme === "dark" ? "light" : "dark")
-          }
-          aria-label="Toggle dark mode"
-        >
-          <span className="trip-switch__thumb" />
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+                  <button
+                    type="button"
+                    className={`trip-switch ${theme === "dark" ? "active" : ""}`}
+                    onClick={() =>
+                      handleThemeChange(theme === "dark" ? "light" : "dark")
+                    }
+                    aria-label="Toggle dark mode"
+                  >
+                    <span className="trip-switch__thumb" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </aside>
 

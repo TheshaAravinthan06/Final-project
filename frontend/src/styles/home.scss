@@ -2004,8 +2004,9 @@
   &__icon-wrap {
     position: relative;
     width: 42px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
     justify-content: center;
     flex-shrink: 0;
   }
@@ -2037,27 +2038,51 @@
 
   &__badge {
     position: absolute;
-    top: -4px;
-    right: -4px;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
+    top: -6px;
+    right: -8px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
     border-radius: 999px;
     background: linear-gradient(135deg, #ff6b6b, #ef4444);
     color: #ffffff;
     display: grid;
     place-items: center;
-    font-size: 10px;
-    font-weight: 800;
+    font-size: 11px;
+    font-weight: 700;
     line-height: 1;
+    justify-content: center;
+    align-items: center;
     border: 2px solid #1b382f;
     box-shadow: 0 6px 14px rgba(239, 68, 68, 0.28);
+    z-index: 2;
   }
 }
 
 .trip-sidebar:hover .trip-nav__label {
   opacity: 1;
   transform: translateX(0);
+}
+
+.sidebar-icon-wrapper {
+  position: relative;
+}
+
+.sidebar-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 // trip more menu

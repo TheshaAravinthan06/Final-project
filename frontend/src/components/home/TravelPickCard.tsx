@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { FiBookmark, FiCalendar } from "react-icons/fi";
 import { useRouter } from "next/navigation";
+import api from "@/lib/axios";
 
 type TravelPick = {
   _id: string;
@@ -13,6 +15,7 @@ type TravelPick = {
   price: number;
   isBookingOpen?: boolean;
   createdAt?: string;
+  isSaved?: boolean;
 };
 
 type Props = {
@@ -69,6 +72,13 @@ const formatTripDate = (dateString: string) => {
 
 export default function TravelPickCard({ pick, onBookNow }: Props) {
   const router = useRouter();
+  const [saved, setSaved] = useState(Boolean(pick.isSaved));
+  const [toast, setToast] = useState("");
+
+  const showToast = (text: string) => {
+    setToast(text);
+    window.setTimeout(() => setToast(""), 1800);
+  };
 
   const handleBookNow = () => {
     if (!pick.isBookingOpen) return;
@@ -81,8 +91,27 @@ export default function TravelPickCard({ pick, onBookNow }: Props) {
     router.push(`/travel-picks/${pick._id}`);
   };
 
+  const handleSave = async () => {
+    const nextSaved = !saved;
+    setSaved(nextSaved);
+
+    try {
+      if (nextSaved) {
+        await api.post(`/travel-picks/${pick._id}/save`);
+        showToast("Saved to Travel Picks");
+      } else {
+        await api.post(`/travel-picks/${pick._id}/unsave`);
+      }
+    } catch (error) {
+      console.error("Travel pick save failed:", error);
+      setSaved(!nextSaved);
+    }
+  };
+
   return (
     <article className="travel-pick-card">
+      {toast ? <div className="save-toast">{toast}</div> : null}
+
       <div className="travel-pick-card__image-wrap">
         <img src={getImageSrc(pick.imageUrl)} alt={pick.title} />
       </div>
@@ -102,8 +131,9 @@ export default function TravelPickCard({ pick, onBookNow }: Props) {
         <div className="travel-pick-card__bottom">
           <button
             type="button"
-            className="travel-pick-card__save"
+            className={`travel-pick-card__save ${saved ? "is-saved" : ""}`}
             aria-label="Save travel pick"
+            onClick={handleSave}
           >
             <FiBookmark />
           </button>

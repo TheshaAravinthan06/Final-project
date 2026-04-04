@@ -80,31 +80,16 @@ export default function NotificationsOverlay({
     }
   };
 
-  const fetchNotifications = async () => {
+const fetchNotifications = async () => {
   try {
     setLoading(true);
-
-    const hasClientToken =
-      typeof window !== "undefined" &&
-      Boolean(
-        localStorage.getItem("token") ||
-          sessionStorage.getItem("token") ||
-          localStorage.getItem("accessToken") ||
-          sessionStorage.getItem("accessToken")
-      );
-
-    if (!hasClientToken) {
-      setNotifications([]);
-      setUnreadCount(0);
-      emitUnreadCount(0);
-      return;
-    }
 
     const res = await api.get("/notifications");
 
     const items = Array.isArray(res.data?.notifications)
       ? res.data.notifications
       : [];
+
     const unread = Number(res.data?.unreadCount || 0);
 
     setNotifications(items);
@@ -169,20 +154,7 @@ export default function NotificationsOverlay({
   };
 
   const handleReadAll = async () => {
-  try {
-    const hasClientToken =
-      typeof window !== "undefined" &&
-      Boolean(
-        localStorage.getItem("token") ||
-          sessionStorage.getItem("token") ||
-          localStorage.getItem("accessToken") ||
-          sessionStorage.getItem("accessToken")
-      );
-
-    if (!hasClientToken) {
-      setUnreadCount(0);
-      return;
-    }
+    try {
 
     if (unreadCount === 0) return;
 

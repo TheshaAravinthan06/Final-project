@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import UserBlog from "../models/userBlog.models.js";
-import User from "../models/user.models.js";
+
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 const getOptionalUserId = (req) => {
   try {
@@ -25,50 +27,34 @@ const getOptionalUserId = (req) => {
   }
 };
 
-// helper — fetch the set of userIds that userId is following
-const getFollowingSet = async (userId) => {
-  if (!userId) return new Set();
-  try {
-    const user = await User.findById(userId).select("following").lean();
-    return new Set((user?.following || []).map(String));
-  } catch {
-    return new Set();
-  }
-};
-
-const formatBlog = (blog, userId = null, followingIds = new Set()) => {
-  const authorId = blog.author?._id ? String(blog.author._id) : null;
-  const isOwnBlog = userId && authorId && String(userId) === authorId;
-
-  return {
-    _id: blog._id,
-    title: blog.title || "",
-    coverImage: blog.coverImage || "",
-    excerpt: blog.excerpt || "",
-    content: blog.content || "",
-    location: blog.location || "",
-    createdAt: blog.createdAt,
-    updatedAt: blog.updatedAt,
-    isPublished: blog.isPublished !== false,
-    likesCount: blog.likes?.length || 0,
-    commentsCount: blog.comments?.length || 0,
-    isLiked: userId
-      ? (blog.likes || []).some((id) => String(id) === String(userId))
-      : false,
-    isSaved: userId
-      ? (blog.savedBy || []).some((id) => String(id) === String(userId))
-      : false,
-    author: blog.author
-      ? {
-          _id: blog.author._id,
-          username: blog.author.username,
-          name: blog.author.name || "",
-          profileImage: blog.author.profileImage || "",
-          isFollowing: isOwnBlog ? false : followingIds.has(authorId),
-        }
-      : null,
-  };
-};
+const formatBlog = (blog, userId = null) => ({
+  _id: blog._id,
+  title: blog.title || "",
+  coverImage: blog.coverImage || "",
+  excerpt: blog.excerpt || "",
+  content: blog.content || "",
+  location: blog.location || "",
+  createdAt: blog.createdAt,
+  updatedAt: blog.updatedAt,
+  isPublished: blog.isPublished !== false,
+  likesCount: blog.likes?.length || 0,
+  commentsCount: blog.comments?.length || 0,
+  savesCount: blog.savedBy?.length || 0,
+  isLiked: userId
+    ? (blog.likes || []).some((id) => String(id) === String(userId))
+    : false,
+  isSaved: userId
+    ? (blog.savedBy || []).some((id) => String(id) === String(userId))
+    : false,
+  author: blog.author
+    ? {
+        _id: blog.author._id,
+        username: blog.author.username,
+        name: blog.author.name || "",
+        profileImage: blog.author.profileImage || "",
+      }
+    : null,
+});
 
 export const createBlog = async (req, res) => {
   try {
@@ -87,11 +73,9 @@ export const createBlog = async (req, res) => {
       "username name profileImage"
     );
 
-    const followingSet = await getFollowingSet(req.user._id);
-
     res.status(201).json({
       message: "Blog created successfully",
-      blog: formatBlog(populatedBlog, req.user._id, followingSet),
+      blog: formatBlog(populatedBlog, req.user._id),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -101,7 +85,6 @@ export const createBlog = async (req, res) => {
 export const getAllBlogs = async (req, res) => {
   try {
     const userId = getOptionalUserId(req);
-    const followingSet = await getFollowingSet(userId);
 
     const blogs = await UserBlog.find({ isPublished: { $ne: false } })
       .populate("author", "username name profileImage")
@@ -109,7 +92,7 @@ export const getAllBlogs = async (req, res) => {
 
     res.status(200).json({
       count: blogs.length,
-      blogs: blogs.map((blog) => formatBlog(blog, userId, followingSet)),
+      blogs: blogs.map((blog) => formatBlog(blog, userId)),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -136,9 +119,7 @@ export const getBlogById = async (req, res) => {
       return res.status(404).json({ message: "Blog not found" });
     }
 
-    const followingSet = await getFollowingSet(viewerId);
-
-    res.status(200).json({ blog: formatBlog(blog, viewerId, followingSet) });
+    res.status(200).json({ blog: formatBlog(blog, viewerId) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -158,11 +139,9 @@ export const getBlogsByUserId = async (req, res) => {
       .populate("author", "username name profileImage")
       .sort({ createdAt: -1 });
 
-    const followingSet = await getFollowingSet(viewerId);
-
     res.status(200).json({
       count: blogs.length,
-      blogs: blogs.map((blog) => formatBlog(blog, viewerId, followingSet)),
+      blogs: blogs.map((blog) => formatBlog(blog, viewerId)),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -197,11 +176,9 @@ export const updateBlog = async (req, res) => {
       "username name profileImage"
     );
 
-    const followingSet = await getFollowingSet(req.user._id);
-
     res.status(200).json({
       message: "Blog updated successfully",
-      blog: formatBlog(updatedBlog, req.user._id, followingSet),
+      blog: formatBlog(updatedBlog, req.user._id),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -228,14 +205,12 @@ export const toggleBlogVisibility = async (req, res) => {
       "username name profileImage"
     );
 
-    const followingSet = await getFollowingSet(req.user._id);
-
     res.status(200).json({
       message:
         blog.isPublished === false
           ? "Blog hidden successfully"
           : "Blog visible to users again",
-      blog: formatBlog(updatedBlog, req.user._id, followingSet),
+      blog: formatBlog(updatedBlog, req.user._id),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -251,6 +226,75 @@ export const reportBlog = async (req, res) => {
     }
 
     res.status(200).json({ message: "Blog reported successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const saveBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid blog id" });
+    }
+
+    const blog = await UserBlog.findById(id).populate(
+      "author",
+      "username name profileImage"
+    );
+
+    if (!blog || blog.isPublished === false) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    const alreadySaved = blog.savedBy.some(
+      (userId) => String(userId) === String(req.user._id)
+    );
+
+    if (alreadySaved) {
+      return res.status(400).json({ message: "Blog already saved" });
+    }
+
+    blog.savedBy.push(req.user._id);
+    await blog.save();
+
+    return res.status(200).json({
+      message: "Blog saved successfully",
+      blog: formatBlog(blog, req.user._id),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const unsaveBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid blog id" });
+    }
+
+    const blog = await UserBlog.findById(id).populate(
+      "author",
+      "username name profileImage"
+    );
+
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    blog.savedBy = blog.savedBy.filter(
+      (userId) => String(userId) !== String(req.user._id)
+    );
+
+    await blog.save();
+
+    return res.status(200).json({
+      message: "Blog unsaved successfully",
+      blog: formatBlog(blog, req.user._id),
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
