@@ -24,10 +24,13 @@ export default function PopularDestinations({
   onOpenLogin,
 }: PopularDestinationsProps) {
   return (
-    <section className="section section-soft">
-      <div className="container">
+    <section
+      className="section section-soft destinations-section"
+      aria-labelledby="destinations-heading"
+    >
+      <div className="container destinations-section__inner">
         <div className="section-heading fade-up">
-          <h2>Popular Destinations</h2>
+          <h2 id="destinations-heading">Popular Destinations</h2>
           <p>Beautiful places chosen to match different moods and travel styles.</p>
         </div>
 
