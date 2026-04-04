@@ -1187,9 +1187,9 @@ const [changingPassword, setChangingPassword] = useState(false);
       </div>
 
       <div className="settings-password-extra">
-        <span className="settings-password-forgot">
-          Forgot your password?
-        </span>
+        <Link href="/forgot-password" className="settings-password-forgot">
+  Forgot password?
+</Link>
 
         <label className="settings-password-logout">
           <input type="checkbox" />

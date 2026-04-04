@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { FiArrowLeft, FiEye, FiEyeOff, FiLock } from "react-icons/fi";
 import api from "@/lib/axios";
-import { FiEye, FiEyeOff } from "react-icons/fi";
 
 type ResetErrors = {
   password?: string;
@@ -99,80 +99,115 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <section className="auth-page-wrap">
-      <div className="auth-page-card">
-        <Link href="/" className="auth-page-back">
-          ← Back to home
-        </Link>
+    <section className="packpalz-auth-page">
+      <div className="packpalz-auth-shell">
+        <div className="packpalz-auth-visual">
+          <div className="packpalz-auth-visual__badge">PackPalz</div>
+          <h1>Create a new password</h1>
+          <p>
+            Choose a strong new password for your PackPalz account and continue
+            your journey safely.
+          </p>
 
-        <h1>Reset Password</h1>
-        <p>Enter your new password below.</p>
-
-        {successMessage && (
-          <div className="form-success-box">{successMessage}</div>
-        )}
-
-        {errors.general && <div className="form-error-box">{errors.general}</div>}
-
-        <form className="auth-page-form" onSubmit={handleSubmit}>
-          <div className="field-group">
-            <div className="password-field">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                placeholder="New password"
-                value={formData.password}
-                onChange={handleChange}
-                className={errors.password ? "input-error" : ""}
-              />
-              <button
-                type="button"
-                className="eye-icon"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <FiEyeOff /> : <FiEye />}
-              </button>
+          <div className="packpalz-auth-visual__card">
+            <div className="packpalz-auth-visual__icon">
+              <FiLock />
             </div>
+            <div>
+              <strong>Secure reset</strong>
+              <span>Your password should be at least 8 characters long.</span>
+            </div>
+          </div>
+        </div>
 
-            {errors.password && (
-              <p className="field-error-text">{errors.password}</p>
-            )}
+        <div className="packpalz-auth-card">
+          <Link href="/" className="packpalz-auth-back">
+            <FiArrowLeft />
+            <span>Back to home</span>
+          </Link>
+
+          <div className="packpalz-auth-card__head">
+            <div className="packpalz-auth-card__mini-icon">
+              <FiLock />
+            </div>
+            <h2>Reset password</h2>
+            <p>Enter and confirm your new password below.</p>
           </div>
 
-          <div className="field-group">
-            <div className="password-field">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                name="confirmPassword"
-                placeholder="Confirm new password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className={errors.confirmPassword ? "input-error" : ""}
-              />
-              <button
-                type="button"
-                className="eye-icon"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                aria-label={
-                  showConfirmPassword
-                    ? "Hide confirm password"
-                    : "Show confirm password"
-                }
-              >
-                {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
-              </button>
+          {successMessage && (
+            <div className="form-success-box">{successMessage}</div>
+          )}
+
+          {errors.general && (
+            <div className="form-error-box">{errors.general}</div>
+          )}
+
+          <form className="packpalz-auth-form" onSubmit={handleSubmit}>
+            <div className="packpalz-auth-field">
+              <label>New password</label>
+              <div className="password-field">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Enter new password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={errors.password ? "input-error" : ""}
+                />
+                <button
+                  type="button"
+                  className="eye-icon"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <FiEyeOff /> : <FiEye />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="field-error-text">{errors.password}</p>
+              )}
             </div>
 
-            {errors.confirmPassword && (
-              <p className="field-error-text">{errors.confirmPassword}</p>
-            )}
-          </div>
+            <div className="packpalz-auth-field">
+              <label>Confirm password</label>
+              <div className="password-field">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  placeholder="Confirm new password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className={errors.confirmPassword ? "input-error" : ""}
+                />
+                <button
+                  type="button"
+                  className="eye-icon"
+                  onClick={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
+                  aria-label={
+                    showConfirmPassword
+                      ? "Hide confirm password"
+                      : "Show confirm password"
+                  }
+                >
+                  {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="field-error-text">{errors.confirmPassword}</p>
+              )}
+            </div>
 
-          <button type="submit" className="auth-submit-btn" disabled={loading}>
-            {loading ? "Updating..." : "Reset Password"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="packpalz-auth-submit"
+              disabled={loading}
+            >
+              {loading ? "Updating..." : "Update password"}
+            </button>
+          </form>
+        </div>
       </div>
     </section>
   );
