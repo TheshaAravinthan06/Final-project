@@ -9,15 +9,15 @@ const sha256 = (value) =>
 
 const accessCookieOptions = {
   httpOnly: true,
-  secure: false,
-  sameSite: "strict",
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
   maxAge: 24 * 60 * 60 * 1000,
 };
 
 const refreshCookieOptions = {
   httpOnly: true,
-  secure: false,
-  sameSite: "strict",
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
@@ -84,6 +84,35 @@ export const register = async (req, res) => {
     return res.status(500).json({
       message: error.message || "Server error during registration",
     });
+  }
+};
+
+const frontendBase = () =>
+  (process.env.FRONTEND_URL || "http://localhost:3000").replace(/\/$/, "");
+
+// Google OAuth: set same cookies as email login, then send user to the app
+export const googleAuthCallback = async (req, res) => {
+  try {
+    const payload = req.user;
+    if (!payload?.user || !payload?.token) {
+      return res.redirect(`${frontendBase()}/?error=google_auth`);
+    }
+
+    const { user, token } = payload;
+    const refreshToken = crypto.randomBytes(40).toString("hex");
+
+    user.refreshTokenHash = sha256(refreshToken);
+    user.refreshTokenExpire = Date.now() + 7 * 24 * 60 * 60 * 1000;
+    user.lastLogin = new Date();
+    await user.save();
+
+    res.cookie("token", token, accessCookieOptions);
+    res.cookie("refreshToken", refreshToken, refreshCookieOptions);
+
+    return res.redirect(`${frontendBase()}/`);
+  } catch (error) {
+    console.error("GOOGLE CALLBACK ERROR:", error);
+    return res.redirect(`${frontendBase()}/?error=google_auth`);
   }
 };
 
@@ -216,14 +245,14 @@ export const logoutUser = async (req, res) => {
 
     res.clearCookie("token", {
       httpOnly: true,
-      secure: false,
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     });
 
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: false,
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     });
 
     return res.status(200).json({
@@ -289,14 +318,14 @@ export const changePassword = async (req, res) => {
 
     res.clearCookie("token", {
       httpOnly: true,
-      secure: false,
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     });
 
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: false,
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     });
 
     return res.status(200).json({

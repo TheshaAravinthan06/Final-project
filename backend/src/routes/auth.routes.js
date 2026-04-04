@@ -7,9 +7,10 @@ import {
   resetPassword,
   refreshToken,
   changePassword,
+  googleAuthCallback,
 } from "../controllers/auth.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
-import passport from "passport";
+import passport, { isGoogleAuthEnabled } from "../config/passport.js";
 
 const router = express.Router();
 
@@ -28,21 +29,31 @@ router.get("/me", protect, (req, res) => {
   });
 });
 
-router.get(
-  "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
+const googleFailureRedirect = `${(process.env.FRONTEND_URL || "http://localhost:3000").replace(/\/$/, "")}/?error=google_denied`;
 
-router.get(
-  "/google/callback",
-  passport.authenticate("google", { session: false }),
-  (req, res) => {
-    res.json({
-      message: "Google login successful",
-      token: req.user.token,
-      user: req.user.user,
+if (isGoogleAuthEnabled) {
+  router.get(
+    "/google",
+    passport.authenticate("google", { scope: ["profile", "email"] })
+  );
+  router.get(
+    "/google/callback",
+    passport.authenticate("google", {
+      session: false,
+      failureRedirect: googleFailureRedirect,
+    }),
+    googleAuthCallback
+  );
+} else {
+  router.get("/google", (req, res) => {
+    res.status(503).json({
+      message:
+        "Google login is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend .env",
     });
-  }
-);
+  });
+  router.get("/google/callback", (req, res) => {
+    res.status(503).json({ message: "Google OAuth not configured." });
+  });
+}
 
 export default router;

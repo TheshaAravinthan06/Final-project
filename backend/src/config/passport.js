@@ -4,20 +4,28 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import User from "../models/user.models.js";
 import jwt from "jsonwebtoken";
 
+const apiPublic =
+  (process.env.API_PUBLIC_URL || `http://localhost:${process.env.PORT || 5000}`).replace(
+    /\/$/,
+    ""
+  );
+const googleCallbackURL =
+  process.env.GOOGLE_CALLBACK_URL || `${apiPublic}/auth/google/callback`;
 
-// fail fast if env vars are missing
-if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.JWT_SECRET) {
-  throw new Error("Missing required environment variables: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, or JWT_SECRET");
-}
+export const isGoogleAuthEnabled = Boolean(
+  process.env.GOOGLE_CLIENT_ID &&
+    process.env.GOOGLE_CLIENT_SECRET &&
+    process.env.JWT_SECRET
+);
 
-// Google OAuth Strategy
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL || "/auth/google/callback",
-    },
+if (isGoogleAuthEnabled) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        callbackURL: googleCallbackURL,
+      },
     async (accessToken, refreshToken, profile, done) => {
       try {
         let user = await User.findOne({ googleId: profile.id });
@@ -44,6 +52,7 @@ passport.use(
       }
     }
   )
-);
+  );
+}
 
 export default passport;
