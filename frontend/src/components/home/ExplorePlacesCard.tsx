@@ -1,33 +1,34 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
-  FiHeart,
-  FiMessageCircle,
   FiBookmark,
+  FiHeart,
   FiMapPin,
+  FiMessageCircle,
   FiSend,
 } from "react-icons/fi";
 import api from "@/lib/axios";
+import ShareToFollowingModal from "@/components/common/ShareToFollowingModal";
 
 type PlaceComment = {
   _id: string;
   text: string;
-  createdAt: string;
-  user: {
-    _id: string;
-    username: string;
-  } | null;
+  createdAt?: string;
+  user?: {
+    _id?: string;
+    username?: string;
+    profileImage?: string;
+  };
 };
 
 type Place = {
   _id: string;
+  imageUrl: string;
   placeName: string;
   location: string;
-  imageUrl: string;
   caption: string;
   moodTags: string[];
-  activities: string[];
   bestTime: string;
   weather: string;
   vibe: string;
@@ -66,18 +67,24 @@ const getPlaceImageSrc = (imageUrl?: string) => {
   return `${BACKEND_URL}/${imageUrl}`;
 };
 
-export default function ExplorePlacesCard({
-  place,
-  onPlaceUpdated,
-}: Props) {
+export default function ExplorePlacesCard({ place, onPlaceUpdated }: Props) {
   const [commentText, setCommentText] = useState("");
   const [showComments, setShowComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [toast, setToast] = useState("");
+
+  const commentInputRef = useRef<HTMLInputElement | null>(null);
 
   const imageSrc = useMemo(
     () => getPlaceImageSrc(place.imageUrl),
     [place.imageUrl]
   );
+
+  const showToast = (message: string) => {
+    setToast(message);
+    window.setTimeout(() => setToast(""), 1500);
+  };
 
   const handleLike = async () => {
     try {
@@ -88,8 +95,16 @@ export default function ExplorePlacesCard({
     }
   };
 
+  const handleDoubleClickLike = async () => {
+    if (place.isLiked) return;
+    await handleLike();
+  };
+
   const handleSave = async () => {
     try {
+      const nextSaved = !place.isSaved;
+      showToast(nextSaved ? "Saved" : "Removed");
+
       const res = await api.post(`/places/${place._id}/save`);
       onPlaceUpdated(res.data.place);
     } catch (error) {
@@ -101,21 +116,11 @@ export default function ExplorePlacesCard({
     try {
       const res = await api.post(`/places/${place._id}/share`);
       onPlaceUpdated(res.data.place);
-
-      const shareUrl = `${window.location.origin}/home?place=${place._id}`;
-
-      if (navigator.share) {
-        await navigator.share({
-          title: place.placeName,
-          text: place.caption,
-          url: shareUrl,
-        });
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-      }
     } catch (error) {
       console.error("Share failed:", error);
     }
+
+    setShowShareModal(true);
   };
 
   const handleCommentSubmit = async () => {
@@ -123,9 +128,11 @@ export default function ExplorePlacesCard({
 
     try {
       setSubmittingComment(true);
+
       const res = await api.post(`/places/${place._id}/comments`, {
-        text: commentText,
+        text: commentText.trim(),
       });
+
       onPlaceUpdated(res.data.place);
       setCommentText("");
       setShowComments(true);
@@ -137,143 +144,169 @@ export default function ExplorePlacesCard({
   };
 
   return (
-    <article className="feed-card place-card">
-      <div className="feed-card__header">
-        <div className="feed-card__user">
-          <div className="place-avatar">
-            {place.placeName?.charAt(0) || "P"}
+    <>
+      <article className="feed-card place-card">
+        <div className="feed-card__header">
+          <div className="feed-card__user">
+            <div className="place-avatar">
+              {place.placeName?.charAt(0) || "P"}
+            </div>
+            <div>
+              <h4>{place.placeName}</h4>
+              <p>by {place.createdBy?.username || "admin"} · Explore Places</p>
+            </div>
           </div>
-          <div>
-            <h4>{place.placeName}</h4>
-            <p>by {place.createdBy?.username || "admin"} · Explore Places</p>
-          </div>
-        </div>
 
-        <button type="button" className="place-tag-btn">
-          Admin Post
-        </button>
-      </div>
-
-      <div className="feed-card__image">
-        <img
-          src={imageSrc}
-          alt={place.placeName}
-          onError={(e) => {
-            console.error("Image failed to load:", imageSrc);
-            e.currentTarget.src = "/images/ella.jpg";
-          }}
-        />
-      </div>
-
-      <div className="feed-card__actions">
-        <div className="feed-card__actions-left">
-          <button
-            type="button"
-            className={`icon-btn ${place.isLiked ? "icon-btn--active" : ""}`}
-            onClick={handleLike}
-          >
-            <FiHeart />
-          </button>
-
-          <button
-            type="button"
-            className="icon-btn"
-            onClick={() => setShowComments((prev) => !prev)}
-          >
-            <FiMessageCircle />
-          </button>
-
-          <button type="button" className="icon-btn" onClick={handleShare}>
-            <FiSend />
+          <button type="button" className="place-tag-btn">
+            Admin Post
           </button>
         </div>
 
-        <button
-          type="button"
-          className={`icon-btn ${place.isSaved ? "icon-btn--active" : ""}`}
-          onClick={handleSave}
-        >
-          <FiBookmark />
-        </button>
-      </div>
-
-      <div className="feed-card__body">
-        <div className="feed-stats">
-          <span>{place.likesCount || 0} likes</span>
-          <span>{place.commentsCount || 0} comments</span>
-          <span>{place.savesCount || 0} saves</span>
-          <span>{place.shareCount || 0} shares</span>
-        </div>
-
-        <div className="place-meta-line">
-          <FiMapPin />
-          <span>{place.location}</span>
-        </div>
-
-        <p className="place-caption">{place.caption}</p>
-
-        {place.moodTags?.length > 0 && (
-          <div className="place-tags">
-            {place.moodTags.map((tag, index) => (
-              <span key={`${tag}-${index}`}>#{tag}</span>
-            ))}
-          </div>
-        )}
-
-        <div className="place-extra">
-          {place.bestTime && (
-            <p>
-              <strong>Best time:</strong> {place.bestTime}
-            </p>
-          )}
-          {place.weather && (
-            <p>
-              <strong>Weather:</strong> {place.weather}
-            </p>
-          )}
-          {place.vibe && (
-            <p>
-              <strong>Vibe:</strong> {place.vibe}
-            </p>
-          )}
-          {place.travelTip && (
-            <p>
-              <strong>Tip:</strong> {place.travelTip}
-            </p>
-          )}
-        </div>
-
-        <div className="comment-box">
-          <input
-            type="text"
-            placeholder="Write a comment..."
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
+        <div className="feed-card__image" onDoubleClick={handleDoubleClickLike}>
+          <img
+            src={imageSrc}
+            alt={place.placeName}
+            onError={(e) => {
+              console.error("Image failed to load:", imageSrc);
+              e.currentTarget.src = "/images/ella.jpg";
+            }}
           />
+        </div>
+
+        <div className="feed-card__actions feed-card__actions--inline-stats">
+          <div className="feed-action-stat">
+            <button
+              type="button"
+              className={`icon-btn ${place.isLiked ? "icon-btn--active" : ""}`}
+              onClick={handleLike}
+            >
+              <FiHeart />
+            </button>
+            <span className="feed-action-stat__count">
+              {place.likesCount || 0}
+            </span>
+          </div>
+
+          <div className="feed-action-stat">
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={() => {
+                setShowComments(true);
+                commentInputRef.current?.focus();
+              }}
+            >
+              <FiMessageCircle />
+            </button>
+            <span className="feed-action-stat__count">
+              {place.commentsCount || 0}
+            </span>
+          </div>
+
+          <div className="feed-action-stat">
+            <button type="button" className="icon-btn" onClick={handleShare}>
+              <FiSend />
+            </button>
+            <span className="feed-action-stat__count">
+              {place.shareCount || 0}
+            </span>
+          </div>
+
           <button
             type="button"
-            onClick={handleCommentSubmit}
-            disabled={submittingComment}
+            className={`icon-btn feed-save-btn ${
+              place.isSaved ? "icon-btn--saved" : ""
+            }`}
+            onClick={handleSave}
           >
-            {submittingComment ? "Posting..." : "Post"}
+            <FiBookmark />
           </button>
         </div>
 
-        {showComments && (
-          <div className="comment-list">
-            {(place.comments || []).length === 0 ? (
-              <p className="comment-empty">No comments yet.</p>
-            ) : (
-              (place.comments || []).map((comment) => (
-                <div key={comment._id} className="comment-item">
-                  <strong>{comment.user?.username || "user"}</strong>
-                  <span>{comment.text}</span>
-                </div>
-              ))
+        <div className="feed-card__body place-card__body">
+          <div className="place-meta-line">
+            <FiMapPin />
+            <span>{place.location}</span>
+          </div>
+
+          <p className="place-caption place-card__caption">{place.caption}</p>
+
+          {place.moodTags?.length > 0 && (
+            <div className="place-tags">
+              {place.moodTags.map((tag, index) => (
+                <span key={`${tag}-${index}`}>#{tag}</span>
+              ))}
+            </div>
+          )}
+
+          <div className="place-extra">
+            {place.bestTime && (
+              <p>
+                <strong>Best time:</strong> {place.bestTime}
+              </p>
+            )}
+            {place.weather && (
+              <p>
+                <strong>Weather:</strong> {place.weather}
+              </p>
+            )}
+            {place.vibe && (
+              <p>
+                <strong>Vibe:</strong> {place.vibe}
+              </p>
+            )}
+            {place.travelTip && (
+              <p>
+                <strong>Tip:</strong> {place.travelTip}
+              </p>
             )}
           </div>
-        )}
-      </div>
-    </article>
+
+          <div className="comment-box place-card__comment-box">
+            <input
+              ref={commentInputRef}
+              type="text"
+              placeholder="Write a comment..."
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={handleCommentSubmit}
+              disabled={submittingComment}
+            >
+              {submittingComment ? "Posting..." : "Post"}
+            </button>
+          </div>
+
+          {showComments && (
+            <div className="comment-list">
+              {(place.comments || []).length === 0 ? (
+                <p className="comment-empty">No comments yet.</p>
+              ) : (
+                (place.comments || []).map((comment) => (
+                  <div key={comment._id} className="comment-item">
+                    <strong>{comment.user?.username || "user"}</strong>
+                    <span>{comment.text}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
+        <ShareToFollowingModal
+          open={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          title="Share place"
+          shareText={`${place.placeName} - ${place.caption}`}
+          shareUrl={`${
+            typeof window !== "undefined" ? window.location.origin : ""
+          }/home?place=${place._id}`}
+        />
+      </article>
+
+      {toast && <div className="save-toast">{toast}</div>}
+    </>
   );
 }

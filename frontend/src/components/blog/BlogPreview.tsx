@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
+import ShareToFollowingModal from "@/components/common/ShareToFollowingModal";
 import {
   FiHeart,
   FiMessageCircle,
@@ -28,6 +29,7 @@ type BlogPreviewProps = {
     likesCount?: number;
     commentsCount?: number;
     savesCount?: number;
+    shareCount?: number;
     isLiked?: boolean;
     isSaved?: boolean;
     author?: {
@@ -79,8 +81,11 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
   const [liked, setLiked] = useState(Boolean(blog.isLiked));
   const [saved, setSaved] = useState(Boolean(blog.isSaved));
   const [likesCount, setLikesCount] = useState(blog.likesCount || 0);
+  const [commentsCount, setCommentsCount] = useState(blog.commentsCount || 0);
+  const [shareCount, setShareCount] = useState(blog.shareCount || 0);
   const [commentText, setCommentText] = useState("");
   const [toast, setToast] = useState("");
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const [currentUserId, setCurrentUserId] = useState("");
   const [followLoading, setFollowLoading] = useState(false);
@@ -91,6 +96,7 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
   const [showUnfollowModal, setShowUnfollowModal] = useState(false);
 
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const commentInputRef = useRef<HTMLInputElement | null>(null);
 
   const username = blog.author?.username || "user";
   const avatarSrc = useMemo(
@@ -164,9 +170,17 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
     }
   };
 
+  const handleDoubleClickLike = () => {
+    if (!liked) {
+      handleLike();
+    }
+  };
+
   const handleSave = async () => {
     const nextSaved = !saved;
     setSaved(nextSaved);
+    setToast(saved ? "Removed" : "Saved");
+    setTimeout(() => setToast(""), 1500);
 
     try {
       if (nextSaved) {
@@ -189,6 +203,7 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
 
     try {
       await api.post(`/blogs/${blog._id}/comment`, { text });
+      setCommentsCount((prev) => prev + 1);
     } catch (error) {
       console.error("Blog comment failed:", error);
       alert("Failed to comment.");
@@ -206,22 +221,9 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
     }
   };
 
-  const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/blogs/${blog._id}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: blog.title,
-          text: previewText || "Check this blog",
-          url: shareUrl,
-        });
-      } catch {}
-    } else {
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-      } catch {}
-    }
+  const handleShare = () => {
+    setShareCount((prev) => prev + 1);
+    setShowShareModal(true);
   };
 
   const handleFollow = async () => {
@@ -392,7 +394,7 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
           </div>
         </div>
 
-        <div className="blog-feed-card__content-wrap">
+        <div className="blog-feed-card__content-wrap" onDoubleClick={handleDoubleClickLike}>
           <div className="blog-feed-card__image">
             <img src={coverSrc} alt={blog.title} />
           </div>
@@ -416,8 +418,8 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
           </div>
         </div>
 
-        <div className="blog-feed-card__actions">
-          <div className="blog-feed-card__actions-left">
+        <div className="blog-feed-card__actions blog-feed-card__actions--inline-stats">
+          <div className="feed-action-stat">
             <button
               type="button"
               className={`icon-btn ${liked ? "icon-btn--active" : ""}`}
@@ -425,19 +427,30 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
             >
               <FiHeart />
             </button>
+            <span className="feed-action-stat__count">{likesCount}</span>
+          </div>
 
-            <button type="button" className="icon-btn">
+          <div className="feed-action-stat">
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={() => commentInputRef.current?.focus()}
+            >
               <FiMessageCircle />
             </button>
+            <span className="feed-action-stat__count">{commentsCount}</span>
+          </div>
 
+          <div className="feed-action-stat">
             <button type="button" className="icon-btn" onClick={handleShare}>
               <FiSend />
             </button>
+            <span className="feed-action-stat__count">{shareCount}</span>
           </div>
 
           <button
             type="button"
-            className={`icon-btn ${saved ? "icon-btn--active" : ""}`}
+            className={`icon-btn feed-save-btn ${saved ? "icon-btn--saved" : ""}`}
             onClick={handleSave}
           >
             <FiBookmark />
@@ -449,8 +462,9 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
             <span>{username}</span> {previewText}
           </p>
 
-          <div className="comment-box">
+          <div className="comment-box blog-feed-card__comment-box">
             <input
+              ref={commentInputRef}
               type="text"
               placeholder="Write a comment"
               value={commentText}
@@ -462,6 +476,15 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
           </div>
         </div>
       </article>
+      {toast && <div className="save-toast">{toast}</div>}
+
+      <ShareToFollowingModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        title="Share blog"
+        shareText={blog.title || "Check this blog"}
+        shareUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/blogs/${blog._id}`}
+      />
 
       {showUnfollowModal && (
         <div
@@ -493,6 +516,7 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
             </div>
           </div>
         </div>
+        
       )}
     </>
   );

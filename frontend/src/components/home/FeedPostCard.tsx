@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/axios";
+import ShareToFollowingModal from "@/components/common/ShareToFollowingModal";
 import {
   FiHeart,
   FiMessageCircle,
@@ -74,7 +75,10 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
   const [liked, setLiked] = useState(Boolean(post.isLiked));
   const [saved, setSaved] = useState(Boolean(post.isSaved));
   const [likesCount, setLikesCount] = useState(post.likesCount || 0);
+  const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0);
+  const [shareCount, setShareCount] = useState(post.shareCount || 0);
   const [commentText, setCommentText] = useState("");
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const [currentUserId, setCurrentUserId] = useState("");
   const [followLoading, setFollowLoading] = useState(false);
@@ -85,7 +89,10 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showUnfollowModal, setShowUnfollowModal] = useState(false);
 
+  const [toast, setToast] = useState("");
+
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const commentInputRef = useRef<HTMLInputElement | null>(null);
 
   const username = post.createdBy?.username || "user";
   const avatarSrc = useMemo(
@@ -148,9 +155,17 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
     }
   };
 
+  const handleDoubleClickLike = () => {
+    if (!liked) {
+      handleLike();
+    }
+  };
+
   const handleSave = async () => {
     const nextSaved = !saved;
     setSaved(nextSaved);
+    setToast(saved ? "Removed" : "Saved");
+    setTimeout(() => setToast(""), 1500);
 
     try {
       if (nextSaved) {
@@ -172,28 +187,16 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
 
     try {
       await api.post(`/user-posts/${post._id}/comment`, { text });
+      setCommentsCount((prev) => prev + 1);
     } catch (error) {
       console.error("Comment failed:", error);
       alert("Failed to comment.");
     }
   };
 
-  const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/home?post=${post._id}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: username,
-          text: post.caption || "Check this post",
-          url: shareUrl,
-        });
-      } catch {}
-    } else {
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-      } catch {}
-    }
+  const handleShare = () => {
+    setShareCount((prev) => prev + 1);
+    setShowShareModal(true);
   };
 
   const handleCopyLink = async () => {
@@ -356,12 +359,15 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
           </div>
         </div>
 
-        <div className="feed-card__image feed-card__image--square">
+        <div
+          className="feed-card__image feed-card__image--square"
+          onDoubleClick={handleDoubleClickLike}
+        >
           <img src={postImageSrc} alt={post.caption || "Post image"} />
         </div>
 
-        <div className="feed-card__actions">
-          <div className="feed-card__actions-left">
+        <div className="feed-card__actions feed-card__actions--inline-stats">
+          <div className="feed-action-stat">
             <button
               type="button"
               className={`icon-btn ${liked ? "icon-btn--active" : ""}`}
@@ -369,19 +375,30 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
             >
               <FiHeart />
             </button>
+            <span className="feed-action-stat__count">{likesCount}</span>
+          </div>
 
-            <button type="button" className="icon-btn">
+          <div className="feed-action-stat">
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={() => commentInputRef.current?.focus()}
+            >
               <FiMessageCircle />
             </button>
+            <span className="feed-action-stat__count">{commentsCount}</span>
+          </div>
 
+          <div className="feed-action-stat">
             <button type="button" className="icon-btn" onClick={handleShare}>
               <FiSend />
             </button>
+            <span className="feed-action-stat__count">{shareCount}</span>
           </div>
 
           <button
             type="button"
-            className={`icon-btn ${saved ? "icon-btn--active" : ""}`}
+            className={`icon-btn feed-save-btn ${saved ? "icon-btn--saved" : ""}`}
             onClick={handleSave}
           >
             <FiBookmark />
@@ -393,8 +410,9 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
             <span>{username}</span> {post.caption || ""}
           </p>
 
-          <div className="comment-box">
+          <div className="comment-box feed-card__comment-box">
             <input
+              ref={commentInputRef}
               type="text"
               placeholder="Write a comment"
               value={commentText}
@@ -406,6 +424,14 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
           </div>
         </div>
       </article>
+
+      <ShareToFollowingModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        title="Share post"
+        shareText={post.caption || "Check this post"}
+        shareUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/home?post=${post._id}`}
+      />
 
       {showUnfollowModal && (
         <div

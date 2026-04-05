@@ -8,6 +8,12 @@ import {
   FiSearch,
   FiUser,
   FiMapPin,
+  FiMail,
+  FiPhone,
+  FiUsers,
+  FiChevronDown,
+  FiChevronUp,
+  FiPackage,
 } from "react-icons/fi";
 
 type BookingItem = {
@@ -41,6 +47,14 @@ type BookingItem = {
 
 type FilterType = "all" | "pending" | "confirmed" | "paid" | "advance_paid" | "unpaid";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+
+function getImageSrc(imageUrl?: string) {
+  if (!imageUrl) return null;
+  if (imageUrl.startsWith("http")) return imageUrl;
+  return `${BACKEND_URL}${imageUrl}`;
+}
+
 function formatMoney(value?: number) {
   return new Intl.NumberFormat("en-LK", {
     style: "currency",
@@ -51,7 +65,6 @@ function formatMoney(value?: number) {
 
 function formatDate(value?: string) {
   if (!value) return "-";
-
   return new Date(value).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -59,19 +72,183 @@ function formatDate(value?: string) {
   });
 }
 
-function getStatusClass(status?: string) {
+function getBookingStatusMeta(status?: string) {
   switch (status) {
-    case "confirmed":
-    case "paid":
-      return "success";
-    case "advance_paid":
-      return "warning";
-    case "cancelled":
-    case "refunded":
-      return "danger";
-    default:
-      return "neutral";
+    case "confirmed": return { label: "Confirmed", cls: "booking-status--confirmed" };
+    case "completed": return { label: "Completed", cls: "booking-status--completed" };
+    case "cancelled": return { label: "Cancelled", cls: "booking-status--cancelled" };
+    default:          return { label: "Pending",   cls: "booking-status--pending"   };
   }
+}
+
+function getPaymentStatusMeta(status?: string) {
+  switch (status) {
+    case "paid":         return { label: "Fully Paid",   cls: "payment-status--paid"     };
+    case "advance_paid": return { label: "Advance Paid", cls: "payment-status--advance"  };
+    case "refunded":     return { label: "Refunded",     cls: "payment-status--refunded" };
+    default:             return { label: "Unpaid",       cls: "payment-status--unpaid"   };
+  }
+}
+
+function PaymentBar({ booking }: { booking: BookingItem }) {
+  const paid = booking.advanceAmount || 0;
+  const total = booking.totalPrice || 1;
+  const isPaid = booking.paymentStatus === "paid";
+  const pct = isPaid ? 100 : Math.min(99, Math.round((paid / total) * 100));
+
+  return (
+    <div className="bk-payment-bar">
+      <div className="bk-payment-bar__track">
+        <div
+          className={`bk-payment-bar__fill ${isPaid ? "bk-payment-bar__fill--full" : ""}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span>{pct}%</span>
+    </div>
+  );
+}
+
+function BookingRow({ booking }: { booking: BookingItem }) {
+  const [open, setOpen] = useState(false);
+  const bkMeta = getBookingStatusMeta(booking.bookingStatus);
+  const pmMeta = getPaymentStatusMeta(booking.paymentStatus);
+  const imgSrc = getImageSrc(booking.travelPick?.imageUrl);
+
+  return (
+    <div className={`bk-row ${open ? "bk-row--open" : ""}`}>
+      <button
+        type="button"
+        className="bk-row__main"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        {/* Package */}
+        <div className="bk-row__pkg">
+          <div className="bk-row__thumb">
+            {imgSrc ? (
+              <img src={imgSrc} alt={booking.travelPick?.title} />
+            ) : (
+              <div className="bk-row__thumb-fallback"><FiPackage /></div>
+            )}
+          </div>
+          <div className="bk-row__pkg-info">
+            <strong>{booking.travelPick?.title || "Travel Package"}</strong>
+            <span><FiMapPin />{booking.travelPick?.place || "—"}</span>
+          </div>
+        </div>
+
+        {/* Customer */}
+        <div className="bk-row__customer">
+          <strong>{booking.fullName}</strong>
+          <span>{booking.user?.username || booking.email}</span>
+        </div>
+
+        {/* Trip dates */}
+        <div className="bk-row__dates">
+          <span>{formatDate(booking.travelPick?.startDate)}</span>
+          <span className="bk-row__dates-sep">→</span>
+          <span>{formatDate(booking.travelPick?.endDate)}</span>
+        </div>
+
+        {/* Total + payment progress bar */}
+        <div className="bk-row__total">
+          <strong>{formatMoney(booking.totalPrice)}</strong>
+          <PaymentBar booking={booking} />
+        </div>
+
+        {/* Status chips */}
+        <div className="bk-row__statuses">
+          <span className={`bk-chip ${bkMeta.cls}`}>{bkMeta.label}</span>
+          <span className={`bk-chip ${pmMeta.cls}`}>{pmMeta.label}</span>
+        </div>
+
+        {/* Expand toggle */}
+        <div className="bk-row__toggle">
+          {open ? <FiChevronUp /> : <FiChevronDown />}
+        </div>
+      </button>
+
+      {/* Expanded detail panel */}
+      {open && (
+        <div className="bk-row__detail">
+          <div className="bk-detail-grid">
+
+            <div className="bk-detail-section">
+              <h4 className="bk-detail-section__title">Customer</h4>
+              <div className="bk-detail-rows">
+                <div className="bk-detail-row">
+                  <span><FiUser /> Full Name</span>
+                  <strong>{booking.fullName}</strong>
+                </div>
+                <div className="bk-detail-row">
+                  <span><FiMail /> Email</span>
+                  <strong>{booking.email}</strong>
+                </div>
+                <div className="bk-detail-row">
+                  <span><FiPhone /> Phone</span>
+                  <strong>{booking.phone}</strong>
+                </div>
+                <div className="bk-detail-row">
+                  <span><FiUsers /> Travelers</span>
+                  <strong>{booking.travelersCount}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="bk-detail-section">
+              <h4 className="bk-detail-section__title">Payment Breakdown</h4>
+              <div className="bk-detail-rows">
+                <div className="bk-detail-row">
+                  <span><FiCreditCard /> Total</span>
+                  <strong className="bk-detail-row__amount">{formatMoney(booking.totalPrice)}</strong>
+                </div>
+                <div className="bk-detail-row">
+                  <span>Advance Paid</span>
+                  <strong className="bk-detail-row__amount bk-detail-row__amount--paid">
+                    {formatMoney(booking.advanceAmount)}
+                  </strong>
+                </div>
+                <div className="bk-detail-row">
+                  <span>Remaining</span>
+                  <strong className="bk-detail-row__amount bk-detail-row__amount--due">
+                    {formatMoney(booking.remainingAmount)}
+                  </strong>
+                </div>
+                <div className="bk-detail-row">
+                  <span>Balance Due</span>
+                  <strong>{formatDate(booking.balanceDueDate)}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="bk-detail-section">
+              <h4 className="bk-detail-section__title">Trip Info</h4>
+              <div className="bk-detail-rows">
+                <div className="bk-detail-row">
+                  <span><FiCalendar /> Start</span>
+                  <strong>{formatDate(booking.travelPick?.startDate)}</strong>
+                </div>
+                <div className="bk-detail-row">
+                  <span><FiCalendar /> End</span>
+                  <strong>{formatDate(booking.travelPick?.endDate)}</strong>
+                </div>
+                <div className="bk-detail-row">
+                  <span>Booked On</span>
+                  <strong>{formatDate(booking.createdAt)}</strong>
+                </div>
+                <div className="bk-detail-row">
+                  <span>Booking ID</span>
+                  <strong className="bk-detail-row__id">#{booking._id.slice(-8).toUpperCase()}</strong>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function AdminBookingsPage() {
@@ -92,77 +269,94 @@ export default function AdminBookingsPage() {
         setLoading(false);
       }
     };
-
     fetchBookings();
   }, []);
 
   const filteredBookings = useMemo(() => {
     let data = [...bookings];
-
     if (query.trim()) {
-      const search = query.toLowerCase();
-
-      data = data.filter((item) => {
-        return (
-          item.fullName?.toLowerCase().includes(search) ||
-          item.email?.toLowerCase().includes(search) ||
-          item.phone?.toLowerCase().includes(search) ||
-          item.user?.username?.toLowerCase().includes(search) ||
-          item.travelPick?.title?.toLowerCase().includes(search) ||
-          item.travelPick?.place?.toLowerCase().includes(search)
-        );
-      });
+      const s = query.toLowerCase();
+      data = data.filter((item) =>
+        item.fullName?.toLowerCase().includes(s) ||
+        item.email?.toLowerCase().includes(s) ||
+        item.phone?.toLowerCase().includes(s) ||
+        item.user?.username?.toLowerCase().includes(s) ||
+        item.travelPick?.title?.toLowerCase().includes(s) ||
+        item.travelPick?.place?.toLowerCase().includes(s)
+      );
     }
-
     switch (activeFilter) {
-      case "pending":
-        data = data.filter((item) => item.bookingStatus === "pending");
-        break;
-      case "confirmed":
-        data = data.filter((item) => item.bookingStatus === "confirmed");
-        break;
-      case "paid":
-        data = data.filter((item) => item.paymentStatus === "paid");
-        break;
-      case "advance_paid":
-        data = data.filter((item) => item.paymentStatus === "advance_paid");
-        break;
-      case "unpaid":
-        data = data.filter((item) => item.paymentStatus === "unpaid");
-        break;
-      default:
-        break;
+      case "pending":      data = data.filter((i) => i.bookingStatus === "pending"); break;
+      case "confirmed":    data = data.filter((i) => i.bookingStatus === "confirmed"); break;
+      case "paid":         data = data.filter((i) => i.paymentStatus === "paid"); break;
+      case "advance_paid": data = data.filter((i) => i.paymentStatus === "advance_paid"); break;
+      case "unpaid":       data = data.filter((i) => i.paymentStatus === "unpaid"); break;
     }
-
     return data;
   }, [bookings, query, activeFilter]);
 
-  const counts = useMemo(() => {
-    return {
-      all: bookings.length,
-      pending: bookings.filter((item) => item.bookingStatus === "pending").length,
-      confirmed: bookings.filter((item) => item.bookingStatus === "confirmed").length,
-      paid: bookings.filter((item) => item.paymentStatus === "paid").length,
-      advance_paid: bookings.filter((item) => item.paymentStatus === "advance_paid").length,
-      unpaid: bookings.filter((item) => item.paymentStatus === "unpaid").length,
-    };
-  }, [bookings]);
+  const counts = useMemo(() => ({
+    all:          bookings.length,
+    pending:      bookings.filter((i) => i.bookingStatus === "pending").length,
+    confirmed:    bookings.filter((i) => i.bookingStatus === "confirmed").length,
+    paid:         bookings.filter((i) => i.paymentStatus === "paid").length,
+    advance_paid: bookings.filter((i) => i.paymentStatus === "advance_paid").length,
+    unpaid:       bookings.filter((i) => i.paymentStatus === "unpaid").length,
+  }), [bookings]);
+
+  const filters: { key: FilterType; label: string; count: number; cls: string }[] = [
+    { key: "all",          label: "All",          count: counts.all,          cls: "" },
+    { key: "pending",      label: "Pending",      count: counts.pending,      cls: "bk-filter--pending" },
+    { key: "confirmed",    label: "Confirmed",    count: counts.confirmed,    cls: "bk-filter--confirmed" },
+    { key: "paid",         label: "Paid",         count: counts.paid,         cls: "bk-filter--paid" },
+    { key: "advance_paid", label: "Advance Paid", count: counts.advance_paid, cls: "bk-filter--advance" },
+    { key: "unpaid",       label: "Unpaid",       count: counts.unpaid,       cls: "bk-filter--unpaid" },
+  ];
 
   return (
     <section className="admin-bookings-page">
+
       <div className="admin-page-head">
         <div>
           <h1>Bookings</h1>
           <p>Manage all travel package bookings, balances, and payment progress.</p>
         </div>
-
         <div className="admin-page-head__meta">
-          <span>{filteredBookings.length} bookings</span>
+          <span>{filteredBookings.length} booking{filteredBookings.length !== 1 ? "s" : ""}</span>
         </div>
       </div>
 
-      <div className="admin-bookings-toolbar">
-        <div className="admin-bookings-search">
+      {/* Summary stat pills */}
+      <div className="bk-summary-row">
+        <div className="bk-summary-pill bk-summary-pill--blue">
+          <span className="bk-summary-pill__num">{counts.all}</span>
+          <span>Total</span>
+        </div>
+        <div className="bk-summary-pill bk-summary-pill--orange">
+          <span className="bk-summary-pill__num">{counts.pending}</span>
+          <span>Pending</span>
+        </div>
+        <div className="bk-summary-pill bk-summary-pill--green">
+          <span className="bk-summary-pill__num">{counts.confirmed}</span>
+          <span>Confirmed</span>
+        </div>
+        <div className="bk-summary-pill bk-summary-pill--teal">
+          <span className="bk-summary-pill__num">{counts.paid}</span>
+          <span>Fully Paid</span>
+        </div>
+        <div className="bk-summary-pill bk-summary-pill--amber">
+          <span className="bk-summary-pill__num">{counts.advance_paid}</span>
+          <span>Advance Paid</span>
+        </div>
+        <div className="bk-summary-pill bk-summary-pill--red">
+          <span className="bk-summary-pill__num">{counts.unpaid}</span>
+          <span>Unpaid</span>
+        </div>
+      </div>
+
+      {/* Search + filters */}
+      <div className="bk-toolbar">
+        <div className="bk-search">
           <FiSearch />
           <input
             type="text"
@@ -170,115 +364,54 @@ export default function AdminBookingsPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
+          {query && (
+            <button type="button" className="bk-search__clear" onClick={() => setQuery("")}>×</button>
+          )}
         </div>
-
-        <div className="admin-bookings-filters">
-          {[
-            { key: "all", label: `All (${counts.all})` },
-            { key: "pending", label: `Pending (${counts.pending})` },
-            { key: "confirmed", label: `Confirmed (${counts.confirmed})` },
-            { key: "paid", label: `Paid (${counts.paid})` },
-            { key: "advance_paid", label: `Advance Paid (${counts.advance_paid})` },
-            { key: "unpaid", label: `Unpaid (${counts.unpaid})` },
-          ].map((item) => (
+        <div className="bk-filters">
+          {filters.map((f) => (
             <button
-              key={item.key}
+              key={f.key}
               type="button"
-              className={`admin-bookings-filter-btn ${
-                activeFilter === item.key ? "active" : ""
-              }`}
-              onClick={() => setActiveFilter(item.key as FilterType)}
+              className={`bk-filter-btn ${f.cls} ${activeFilter === f.key ? "bk-filter-btn--active" : ""}`}
+              onClick={() => setActiveFilter(f.key)}
             >
-              {item.label}
+              {f.label}
+              <span className="bk-filter-btn__count">{f.count}</span>
             </button>
           ))}
         </div>
       </div>
 
+      {/* Content */}
       {loading ? (
-        <div className="admin-loading-card">Loading bookings...</div>
+        <div className="bk-empty-state">
+          <div className="bk-empty-state__spinner" />
+          <p>Loading bookings...</p>
+        </div>
       ) : filteredBookings.length === 0 ? (
-        <div className="admin-empty-card">No bookings found.</div>
+        <div className="bk-empty-state">
+          <FiPackage />
+          <p>No bookings found{query ? ` for "${query}"` : ""}.</p>
+        </div>
       ) : (
-        <div className="admin-bookings-grid">
-          {filteredBookings.map((booking) => (
-            <article key={booking._id} className="admin-booking-card">
-              <div className="admin-booking-card__top">
-                <div>
-                  <h3>{booking.travelPick?.title || "Travel Package"}</h3>
-                  <p>
-                    <FiMapPin />
-                    {booking.travelPick?.place || "Place not available"}
-                  </p>
-                </div>
-
-                <div className="admin-booking-badges">
-                  <span className={`admin-badge ${getStatusClass(booking.bookingStatus)}`}>
-                    {booking.bookingStatus}
-                  </span>
-                  <span className={`admin-badge ${getStatusClass(booking.paymentStatus)}`}>
-                    {booking.paymentStatus}
-                  </span>
-                </div>
-              </div>
-
-              <div className="admin-booking-card__info">
-                <div className="admin-booking-info-row">
-                  <span><FiUser /> Customer</span>
-                  <strong>{booking.fullName}</strong>
-                </div>
-
-                <div className="admin-booking-info-row">
-                  <span>Email</span>
-                  <strong>{booking.email}</strong>
-                </div>
-
-                <div className="admin-booking-info-row">
-                  <span>Phone</span>
-                  <strong>{booking.phone}</strong>
-                </div>
-
-                <div className="admin-booking-info-row">
-                  <span>Travelers</span>
-                  <strong>{booking.travelersCount}</strong>
-                </div>
-
-                <div className="admin-booking-info-row">
-                  <span><FiCreditCard /> Total</span>
-                  <strong>{formatMoney(booking.totalPrice)}</strong>
-                </div>
-
-                <div className="admin-booking-info-row">
-                  <span>Advance</span>
-                  <strong>{formatMoney(booking.advanceAmount)}</strong>
-                </div>
-
-                <div className="admin-booking-info-row">
-                  <span>Remaining</span>
-                  <strong>{formatMoney(booking.remainingAmount)}</strong>
-                </div>
-
-                <div className="admin-booking-info-row">
-                  <span><FiCalendar /> Trip date</span>
-                  <strong>
-                    {formatDate(booking.travelPick?.startDate)} - {formatDate(booking.travelPick?.endDate)}
-                  </strong>
-                </div>
-
-                <div className="admin-booking-info-row">
-                  <span>Balance due</span>
-                  <strong>{formatDate(booking.balanceDueDate)}</strong>
-                </div>
-
-                <div className="admin-booking-info-row">
-                  <span>Created</span>
-                  <strong>{formatDate(booking.createdAt)}</strong>
-                </div>
-              </div>
-            </article>
-          ))}
+        <div className="bk-table">
+          <div className="bk-table__head">
+            <div>Package</div>
+            <div>Customer</div>
+            <div>Trip Dates</div>
+            <div>Total / Paid</div>
+            <div>Status</div>
+            <div />
+          </div>
+          <div className="bk-table__body">
+            {filteredBookings.map((booking) => (
+              <BookingRow key={booking._id} booking={booking} />
+            ))}
+          </div>
         </div>
       )}
+
     </section>
   );
 }
