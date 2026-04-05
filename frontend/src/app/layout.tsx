@@ -13,7 +13,7 @@ const cormorantGaramond = Cormorant_Garamond({
 });
 
 export const metadata = {
-  title: "Trip AI",
+  title: "PackPalz - AI Powered Travel Planning        ",
   description: "AI powered travel platform",
 };
 

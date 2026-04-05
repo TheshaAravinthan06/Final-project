@@ -151,6 +151,12 @@ type ChangePasswordForm = {
   confirmNewPassword: string;
 };
 
+type DeactivateAccountForm = {
+  password: string;
+  confirmText: string;
+  agreed: boolean;
+};
+
 const emptyCollections: SavedCollections = {
   posts: { title: "Posts", count: 0, items: [] },
   blogs: { title: "Blogs", count: 0, items: [] },
@@ -637,6 +643,13 @@ export default function SettingsPage() {
 });
 const [changingPassword, setChangingPassword] = useState(false);
 
+const [deactivateForm, setDeactivateForm] = useState<DeactivateForm>({
+  password: "",
+  confirmText: "",
+  agreed: false,
+});
+const [deactivating, setDeactivating] = useState(false);
+
   const [form, setForm] = useState<EditForm>({
     username: "",
     name: "",
@@ -797,6 +810,52 @@ const [changingPassword, setChangingPassword] = useState(false);
     setError(err?.response?.data?.message || "Failed to change password.");
   } finally {
     setChangingPassword(false);
+  }
+};
+
+const handleDeactivateFieldChange = (
+  event: ChangeEvent<HTMLInputElement>
+) => {
+  const { name, value, type, checked } = event.target;
+
+  setDeactivateForm((prev) => ({
+    ...prev,
+    [name]: type === "checkbox" ? checked : value,
+  }));
+};
+
+const handleDeactivateAccount = async (
+  event: FormEvent<HTMLFormElement>
+) => {
+  event.preventDefault();
+
+  try {
+    setDeactivating(true);
+    setError("");
+    setMessage("");
+
+    if (!deactivateForm.agreed) {
+      setError("Please confirm that you understand this action.");
+      return;
+    }
+
+    await api.patch("/users/me/deactivate", {
+      password: deactivateForm.password,
+      confirmText: deactivateForm.confirmText,
+    });
+
+    setDeactivateForm({
+      password: "",
+      confirmText: "",
+      agreed: false,
+    });
+
+    setMessage("Account deactivated successfully.");
+    router.push("/");
+  } catch (err: any) {
+    setError(err?.response?.data?.message || "Failed to deactivate account.");
+  } finally {
+    setDeactivating(false);
   }
 };
 
@@ -1103,44 +1162,8 @@ const [changingPassword, setChangingPassword] = useState(false);
                 />
               )}
             </>
-          ) : currentTab === "appearance" ? (
-            <div className="settings-clean-placeholder">
-              <div className="settings-clean-placeholder__inner">
-                <div className="settings-clean-content__head settings-clean-content__head--placeholder">
-                  <h3>Appearance</h3>
-                </div>
-
-                <div className="settings-theme-panel">
-                  <button
-                    type="button"
-                    className={`settings-theme-panel__item ${
-                      theme === "light" ? "active" : ""
-                    }`}
-                    onClick={() => handleThemeChange("light")}
-                  >
-                    <span className="settings-theme-panel__left">
-                      <FiSun />
-                      <span>Light mode</span>
-                    </span>
-                    <span>{theme === "light" ? "Selected" : ""}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`settings-theme-panel__item ${
-                      theme === "dark" ? "active" : ""
-                    }`}
-                    onClick={() => handleThemeChange("dark")}
-                  >
-                    <span className="settings-theme-panel__left">
-                      <FiMoon />
-                      <span>Dark mode</span>
-                    </span>
-                    <span>{theme === "dark" ? "Selected" : ""}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
+          
+          
 
           ) : currentTab === "change-password" ? (
   <>
@@ -1206,7 +1229,68 @@ const [changingPassword, setChangingPassword] = useState(false);
       </button>
     </form>
   </>
-         
+     
+     ) : currentTab === "deactivate" ? (
+  <>
+    <div className="settings-clean-content__head">
+      <h3>Deactivate Account</h3>
+    </div>
+
+    <form className="settings-deactivate-form" onSubmit={handleDeactivateAccount}>
+      <div className="settings-deactivate-warning">
+        <h4>Deactivate your account</h4>
+        <p>
+          Deactivating your account will hide your profile and
+           content from other users. You can reactivate anytime by logging back in. 
+           This action does not delete your data, 
+           but it will no longer be visible on the platform.
+        </p>
+      </div>
+
+      <div className="settings-deactivate-field">
+        <label>Password</label>
+        <input
+          type="password"
+          name="password"
+          value={deactivateForm.password}
+          onChange={handleDeactivateFieldChange}
+          placeholder="Enter your password"
+        />
+      </div>
+
+      <div className="settings-deactivate-field">
+        <label>Type DEACTIVATE to confirm</label>
+        <input
+          type="text"
+          name="confirmText"
+          value={deactivateForm.confirmText}
+          onChange={handleDeactivateFieldChange}
+          placeholder="DEACTIVATE"
+        />
+      </div>
+
+      <label className="settings-deactivate-check">
+        <input
+          type="checkbox"
+          name="agreed"
+          checked={deactivateForm.agreed}
+          onChange={handleDeactivateFieldChange}
+        />
+        <span>I understand that this action will deactivate my account.</span>
+      </label>
+
+      <div className="settings-deactivate-actions">
+        <button
+          type="submit"
+          className="settings-deactivate-btn"
+          disabled={deactivating}
+        >
+          {deactivating ? "Deactivating..." : "Deactivate account"}
+        </button>
+      </div>
+    </form>
+  </>
+     
         ) : currentTab === "logout" ? (
             <div className="settings-clean-placeholder">
               <div className="settings-clean-placeholder__inner">

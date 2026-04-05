@@ -8,6 +8,7 @@ import fs from "fs";
 import Review from "../models/review.models.js";
 import { createUserNotification } from "../utils/createUserNotification.js";
 import ProblemReport from "../models/problemReport.models.js";
+import bcrypt from "bcryptjs";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -774,6 +775,66 @@ export const createProblemReport = async (req, res) => {
     return res.status(201).json({
       message: "Problem report submitted successfully",
       report,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const deactivateMyAccount = async (req, res) => {
+  try {
+    const { password, confirmText } = req.body;
+
+    if (!password || !confirmText) {
+      return res.status(400).json({
+        message: "Password and confirmation are required",
+      });
+    }
+
+    if (String(confirmText).trim().toLowerCase() !== "deactivate") {
+      return res.status(400).json({
+        message: 'Please type "DEACTIVATE" to confirm',
+      });
+    }
+
+    const user = await User.findById(req.user._id).select("+password");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.googleId && !user.password) {
+      return res.status(400).json({
+        message: "This account does not support password-based deactivation here",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({ message: "Incorrect password" });
+    }
+
+    user.isActive = false;
+    user.refreshTokenHash = undefined;
+    user.refreshTokenExpire = undefined;
+
+    await user.save();
+
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "strict",
+    });
+
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "strict",
+    });
+
+    return res.status(200).json({
+      message: "Account deactivated successfully",
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });

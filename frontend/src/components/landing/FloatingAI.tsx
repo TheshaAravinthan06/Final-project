@@ -23,9 +23,9 @@ export default function FloatingAI({ onOpenLogin }: FloatingAIProps) {
           </button>
 
           <div className="floating-ai-message">
-            <span className="floating-ai-message-label">PackPalz</span>
+            {/* <span className="floating-ai-message-label">PackPalz</span> */}
             <p>
-              Welcome to PackPalz! Planning a trip? <br />
+              Welcome to PackPalz! Planning a trip? 
               How can I assist you today?
             </p>
           </div>

@@ -968,7 +968,7 @@
   min-height: 100vh;
   background: $bg-light;
   color: $text-color;
-  padding: 80px 0;
+  padding: 30px 0;
 }
 
 .contact-page-top {
@@ -1300,43 +1300,44 @@
 
 .floating-ai-wrapper {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
+  right: 22px;
+  bottom: 18px;
   z-index: 1200;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 14px;
+  gap: 8px;
 }
 
 .floating-ai-chatbox {
   position: relative;
-  width: 290px;
+  width: 265px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  animation: fadeUp 0.5s ease;
+  gap: 8px;
+  animation: fadeUp 0.35s ease;
+  margin-bottom: 4px;
 }
 
 .floating-ai-close-btn {
   position: absolute;
-  top: -10px;
-  right: -10px;
-  width: 28px;
-  height: 28px;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
   border: none;
   border-radius: 50%;
-  background: $bg-white;
-  color: $text-color;
-  font-size: 18px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 15px;
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
-  box-shadow: $shadow-soft;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-  transform: scale(0.9);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: scale(0.92);
 }
 
 .floating-ai-chatbox:hover .floating-ai-close-btn {
@@ -1346,36 +1347,44 @@
 }
 
 .floating-ai-message {
-  background: $bg-white;
-  color: $text-color;
-  padding: 18px 18px;
-  border-radius: 18px 18px 4px 18px;
-  line-height: 1.6;
-  font-size: 15px;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
-  border: 1px solid rgba(203, 213, 225, 0.65);
+  background: #ffffff;
+  color: #1f2937;
+  padding: 14px 16px;
+  border-radius: 14px 14px 4px 14px;
+  line-height: 1.45;
+  font-size: 14px;
+  border: 1px solid rgba(203, 213, 225, 0.7);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+}
+
+.floating-ai-message p {
+  margin: 0;
+  color: #1f2937;
+  font-weight: 500;
 }
 
 .floating-ai-suggestions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+}
 
-  button {
-    background: $bg-white;
-    color: $text-color;
-    border: 1px solid rgba(203, 213, 225, 0.75);
-    border-radius: 14px;
-    padding: 12px 14px;
-    text-align: left;
-    transition: $transition;
-    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+.floating-ai-suggestions button {
+  background: #ffffff;
+  color: #6aa483;
+  border: 1px solid rgba(106, 164, 131, 0.28);
+  border-radius: 12px;
+  padding: 10px 13px;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.35;
+  transition: 0.22s ease;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.07);
 
-    &:hover {
-      transform: translateY(-2px);
-      background: #eff8ff;
-      border-color: rgba(34, 211, 238, 0.5);
-    }
+  &:hover {
+    transform: translateY(-1px);
+    background: #f8fffb;
+    border-color: rgba(106, 164, 131, 0.45);
   }
 }
 
@@ -1386,152 +1395,78 @@
   justify-content: center;
 }
 
-.floating-ai-ring-text {
-  position: absolute;
-  top: -34px;
-  right: -8px;
-  font-size: 15px;
-  font-weight: 800;
-  color: #c5f3ff;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
-  transform: rotate(-18deg);
-  white-space: nowrap;
-  pointer-events: none;
-}
-
 .floating-ai-btn {
   position: relative;
-  width: 68px;
-  height: 68px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
-  background: $accent-gradient;
-  color: $text-white;
+  background: linear-gradient(135deg, #79ba97, #97d0ae);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
   border: none;
-  box-shadow: $shadow-glow;
-  animation: aiPulse 1.8s infinite;
-  transition: transform 0.3s ease;
+  box-shadow: 0 12px 24px rgba(94, 159, 124, 0.22);
+  transition: transform 0.25s ease;
   cursor: pointer;
+  animation: none;
+}
 
-  &:hover {
-    transform: scale(1.08);
-  }
+.floating-ai-btn:hover {
+  transform: scale(1.06);
 }
 
 .floating-ai-chat-icon {
-  font-size: 28px;
+  font-size: 23px;
   line-height: 1;
 }
 
 .floating-ai-notification {
   position: absolute;
-  top: -2px;
-  right: -2px;
-  min-width: 22px;
-  height: 22px;
+  top: -1px;
+  right: -1px;
+  min-width: 19px;
+  height: 19px;
   border-radius: 50%;
   background: #ef4444;
-  color: $text-white;
-  font-size: 12px;
+  color: #ffffff;
+  font-size: 10px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid $bg-white;
+  border: 2px solid #ffffff;
 }
 
 /* RESPONSIVE */
 
-@media (max-width: 1100px) {
-  .info-grid,
-  .destination-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .footer-top,
-  .contact-page-box {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 900px) {
-  .navbar {
-    flex-direction: column;
-    gap: 16px;
-    padding: 18px 0;
-  }
-
-  .nav-links {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 16px;
-  }
-
-  .hero-grid,
-  .about-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .hero-left h1 {
-    font-size: 44px;
-  }
-
- .hero-right {
-  justify-content: flex-start;
-}
-
-.hero-why-card {
-  max-width: 430px;
-}
-
-  .footer-bottom {
-    flex-direction: column;
-    text-align: center;
-  }
-}
-
 @media (max-width: 640px) {
-  .hero-left h1 {
-    font-size: 36px;
-  }
-
-  .hero-why-card {
-  max-width: 100%;
-  padding: 22px 18px;
-}
-
-.hero-why-card h3 {
-  font-size: 26px;
-}
-
-.hero-why-mini {
-  grid-template-columns: 1fr;
-}
-
   .floating-ai-wrapper {
-    right: 16px;
-    bottom: 16px;
+    right: 14px;
+    bottom: 14px;
   }
 
   .floating-ai-chatbox {
-    width: 250px;
+    width: 230px;
+    gap: 7px;
   }
 
   .floating-ai-message {
-    font-size: 14px;
-    padding: 14px;
+    font-size: 13px;
+    padding: 12px 13px;
   }
 
   .floating-ai-suggestions button {
-    font-size: 14px;
-    padding: 10px 12px;
+    font-size: 12px;
+    padding: 9px 11px;
   }
 
   .floating-ai-btn {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
+  }
+
+  .floating-ai-chat-icon {
+    font-size: 21px;
   }
 }

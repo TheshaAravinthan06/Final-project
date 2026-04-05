@@ -442,22 +442,22 @@
 
 .auth-modal {
   width: 100%;
-  max-width: 470px;
+  max-width: 400px;
   background:
     linear-gradient(180deg, rgba(24, 52, 45, 0.96) 0%, rgba(15, 36, 31, 0.98) 100%);
-  border-radius: 28px;
-  padding: 24px 24px 20px;
+  border-radius: 24px;
+  padding: 28px 24px ;
   border: 1px solid rgba(159, 199, 169, 0.18);
   box-shadow: 0 32px 60px rgba(7, 14, 12, 0.32);
 }
 
 .auth-modal.auth-modal-register {
-  max-width: 520px;
+  max-width: 400px;
 }
 
 .auth-modal h2 {
   font-size: 44px;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 
 .auth-modal > p {
@@ -476,7 +476,7 @@
 }
 
 .auth-modal input {
-  height: 46px;
+  height: 40px;
   border-radius: 15px;
   background: rgba(248, 246, 241, 0.96);
   border: 1px solid transparent;
@@ -488,7 +488,7 @@
 }
 
 .auth-submit-btn {
-  height: 48px;
+  height: 40px;
   margin-top: 14px;
 }
 
@@ -497,7 +497,7 @@
 }
 
 .google-login-btn {
-  height: 46px;
+  height: 40px;
   border-radius: 14px;
 }
 
@@ -531,7 +531,7 @@
 
 .floating-ai-chatbox {
   position: relative;
-  width: 290px;
+  width: 250px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -548,7 +548,7 @@
   color: #1f2937;
   padding: 16px 18px;
   border-radius: 14px;
-  line-height: 1.6;
+  line-height: 1.2;
   font-size: 15px;
   border: 1px solid rgba(203, 213, 225, 0.75);
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
@@ -557,7 +557,7 @@
 .floating-ai-message p {
   margin: 0;
   color: #1f2937;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .floating-ai-suggestions {

@@ -18,6 +18,7 @@ import {
   blockUser,
   unblockUser,
   getMySavedCollections,
+  deactivateMyAccount,
 } from "../controllers/user.controller.js";
 
 const router = express.Router();
@@ -50,5 +51,7 @@ router.get("/:id", protect, getUserProfileById);
 router.post("/:id/review", protect, addReviewToUser);
 router.get("/:id/reviews", getReviewsOfUser);
 router.delete("/reviews/:reviewId", protect, deleteMyReview);
+
+router.patch("/me/deactivate", protect, deactivateMyAccount);
 
 export default router;
