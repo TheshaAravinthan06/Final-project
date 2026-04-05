@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import api from "@/lib/axios";
+import api, { API_BASE } from "@/lib/axios";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
 type AuthModalProps = {
@@ -253,7 +253,7 @@ export default function AuthModal({
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/auth/google";
+    window.location.assign(`${API_BASE}/auth/google`);
   };
 
   const handleForgotPassword = () => {
