@@ -1163,7 +1163,54 @@ const handleDeactivateAccount = async (
               )}
             </>
           
-          
+          ) : currentTab === "appearance" ? (
+  <>
+    <div className="settings-clean-content__head">
+      <h3>Appearance</h3>
+    </div>
+
+    <div className="settings-appearance-simple">
+      <p className="settings-appearance-simple__note">
+        Choose how BudScape looks for you.
+      </p>
+
+      <div className="settings-appearance-simple__group">
+        <button
+          type="button"
+          className={`settings-appearance-simple__item ${
+            theme === "light" ? "active" : ""
+          }`}
+          onClick={() => handleThemeChange("light")}
+        >
+          <span className="settings-appearance-simple__left">
+            <FiSun />
+            <span>Light</span>
+          </span>
+
+          <span className="settings-appearance-simple__right">
+            {theme === "light" ? "Selected" : ""}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className={`settings-appearance-simple__item ${
+            theme === "dark" ? "active" : ""
+          }`}
+          onClick={() => handleThemeChange("dark")}
+        >
+          <span className="settings-appearance-simple__left">
+            <FiMoon />
+            <span>Dark</span>
+          </span>
+
+          <span className="settings-appearance-simple__right">
+            {theme === "dark" ? "Selected" : ""}
+          </span>
+        </button>
+      </div>
+    </div>
+  </>
 
           ) : currentTab === "change-password" ? (
   <>

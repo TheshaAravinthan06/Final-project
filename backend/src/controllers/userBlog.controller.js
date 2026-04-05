@@ -27,34 +27,51 @@ const getOptionalUserId = (req) => {
   }
 };
 
-const formatBlog = (blog, userId = null) => ({
-  _id: blog._id,
-  title: blog.title || "",
-  coverImage: blog.coverImage || "",
-  excerpt: blog.excerpt || "",
-  content: blog.content || "",
-  location: blog.location || "",
-  createdAt: blog.createdAt,
-  updatedAt: blog.updatedAt,
-  isPublished: blog.isPublished !== false,
-  likesCount: blog.likes?.length || 0,
-  commentsCount: blog.comments?.length || 0,
-  savesCount: blog.savedBy?.length || 0,
-  isLiked: userId
-    ? (blog.likes || []).some((id) => String(id) === String(userId))
-    : false,
-  isSaved: userId
-    ? (blog.savedBy || []).some((id) => String(id) === String(userId))
-    : false,
-  author: blog.author
-    ? {
-        _id: blog.author._id,
-        username: blog.author.username,
-        name: blog.author.name || "",
-        profileImage: blog.author.profileImage || "",
-      }
-    : null,
-});
+const formatBlog = (blogDoc, userId = null) => {
+  const blog = blogDoc.toObject ? blogDoc.toObject() : blogDoc;
+
+  return {
+    _id: blog._id,
+    title: blog.title || "",
+    coverImage: blog.coverImage || "",
+    excerpt: blog.excerpt || "",
+    content: blog.content || "",
+    location: blog.location || "",
+    createdAt: blog.createdAt,
+    updatedAt: blog.updatedAt,
+    isPublished: blog.isPublished !== false,
+    likesCount: blog.likes?.length || 0,
+    commentsCount: blog.comments?.length || 0,
+    savesCount: blog.savedBy?.length || 0,
+    isLiked: userId
+      ? (blog.likes || []).some((id) => String(id) === String(userId))
+      : false,
+    isSaved: userId
+      ? (blog.savedBy || []).some((id) => String(id) === String(userId))
+      : false,
+    author: blog.author
+      ? {
+          _id: blog.author._id,
+          username: blog.author.username,
+          name: blog.author.name || "",
+          profileImage: blog.author.profileImage || "",
+        }
+      : null,
+    comments: (blog.comments || []).map((comment) => ({
+      _id: comment._id,
+      text: comment.text || "",
+      createdAt: comment.createdAt,
+      user: comment.user
+        ? {
+            _id: comment.user._id,
+            username: comment.user.username || "",
+            name: comment.user.name || "",
+            profileImage: comment.user.profileImage || "",
+          }
+        : null,
+    })),
+  };
+};
 
 export const createBlog = async (req, res) => {
   try {
@@ -68,10 +85,9 @@ export const createBlog = async (req, res) => {
       isPublished: true,
     });
 
-    const populatedBlog = await UserBlog.findById(newBlog._id).populate(
-      "author",
-      "username name profileImage"
-    );
+    const populatedBlog = await UserBlog.findById(newBlog._id)
+      .populate("author", "username name profileImage")
+      .populate("comments.user", "username name profileImage");
 
     res.status(201).json({
       message: "Blog created successfully",
@@ -88,6 +104,7 @@ export const getAllBlogs = async (req, res) => {
 
     const blogs = await UserBlog.find({ isPublished: { $ne: false } })
       .populate("author", "username name profileImage")
+      .populate("comments.user", "username name profileImage")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -103,10 +120,9 @@ export const getBlogById = async (req, res) => {
   try {
     const viewerId = getOptionalUserId(req);
 
-    const blog = await UserBlog.findById(req.params.id).populate(
-      "author",
-      "username name profileImage"
-    );
+    const blog = await UserBlog.findById(req.params.id)
+      .populate("author", "username name profileImage")
+      .populate("comments.user", "username name profileImage");
 
     if (!blog) {
       return res.status(404).json({ message: "Blog not found" });
@@ -137,6 +153,7 @@ export const getBlogsByUserId = async (req, res) => {
 
     const blogs = await UserBlog.find(query)
       .populate("author", "username name profileImage")
+      .populate("comments.user", "username name profileImage")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -171,10 +188,9 @@ export const updateBlog = async (req, res) => {
 
     await blog.save();
 
-    const updatedBlog = await UserBlog.findById(blog._id).populate(
-      "author",
-      "username name profileImage"
-    );
+    const updatedBlog = await UserBlog.findById(blog._id)
+      .populate("author", "username name profileImage")
+      .populate("comments.user", "username name profileImage");
 
     res.status(200).json({
       message: "Blog updated successfully",
@@ -200,10 +216,9 @@ export const toggleBlogVisibility = async (req, res) => {
     blog.isPublished = blog.isPublished === false ? true : false;
     await blog.save();
 
-    const updatedBlog = await UserBlog.findById(blog._id).populate(
-      "author",
-      "username name profileImage"
-    );
+    const updatedBlog = await UserBlog.findById(blog._id)
+      .populate("author", "username name profileImage")
+      .populate("comments.user", "username name profileImage");
 
     res.status(200).json({
       message:
@@ -231,6 +246,73 @@ export const reportBlog = async (req, res) => {
   }
 };
 
+export const likeBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid blog id" });
+    }
+
+    const blog = await UserBlog.findById(id)
+      .populate("author", "username name profileImage")
+      .populate("comments.user", "username name profileImage");
+
+    if (!blog || blog.isPublished === false) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    const alreadyLiked = blog.likes.some(
+      (userId) => String(userId) === String(req.user._id)
+    );
+
+    if (alreadyLiked) {
+      return res.status(400).json({ message: "Blog already liked" });
+    }
+
+    blog.likes.push(req.user._id);
+    await blog.save();
+
+    return res.status(200).json({
+      message: "Blog liked successfully",
+      blog: formatBlog(blog, req.user._id),
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const unlikeBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid blog id" });
+    }
+
+    const blog = await UserBlog.findById(id)
+      .populate("author", "username name profileImage")
+      .populate("comments.user", "username name profileImage");
+
+    if (!blog || blog.isPublished === false) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    blog.likes = blog.likes.filter(
+      (userId) => String(userId) !== String(req.user._id)
+    );
+
+    await blog.save();
+
+    return res.status(200).json({
+      message: "Blog unliked successfully",
+      blog: formatBlog(blog, req.user._id),
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 export const saveBlog = async (req, res) => {
   try {
     const { id } = req.params;
@@ -239,10 +321,9 @@ export const saveBlog = async (req, res) => {
       return res.status(400).json({ message: "Invalid blog id" });
     }
 
-    const blog = await UserBlog.findById(id).populate(
-      "author",
-      "username name profileImage"
-    );
+    const blog = await UserBlog.findById(id)
+      .populate("author", "username name profileImage")
+      .populate("comments.user", "username name profileImage");
 
     if (!blog || blog.isPublished === false) {
       return res.status(404).json({ message: "Blog not found" });
@@ -276,10 +357,9 @@ export const unsaveBlog = async (req, res) => {
       return res.status(400).json({ message: "Invalid blog id" });
     }
 
-    const blog = await UserBlog.findById(id).populate(
-      "author",
-      "username name profileImage"
-    );
+    const blog = await UserBlog.findById(id)
+      .populate("author", "username name profileImage")
+      .populate("comments.user", "username name profileImage");
 
     if (!blog) {
       return res.status(404).json({ message: "Blog not found" });
@@ -297,6 +377,85 @@ export const unsaveBlog = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const addCommentToBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid blog id" });
+    }
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: "Comment text is required" });
+    }
+
+    const blog = await UserBlog.findById(id);
+
+    if (!blog || blog.isPublished === false) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    blog.comments.push({
+      user: req.user._id,
+      text: text.trim(),
+    });
+
+    await blog.save();
+
+    const updatedBlog = await UserBlog.findById(id)
+      .populate("author", "username name profileImage")
+      .populate("comments.user", "username name profileImage");
+
+    return res.status(201).json({
+      message: "Comment added successfully",
+      blog: formatBlog(updatedBlog, req.user._id),
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteCommentFromBlog = async (req, res) => {
+  try {
+    const { blogId, commentId } = req.params;
+
+    if (!isValidObjectId(blogId) || !isValidObjectId(commentId)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+
+    const blog = await UserBlog.findById(blogId);
+
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    const comment = blog.comments.id(commentId);
+
+    if (!comment) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    if (String(comment.user) !== String(req.user._id)) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    comment.deleteOne();
+    await blog.save();
+
+    const updatedBlog = await UserBlog.findById(blogId)
+      .populate("author", "username name profileImage")
+      .populate("comments.user", "username name profileImage");
+
+    return res.status(200).json({
+      message: "Comment deleted successfully",
+      blog: formatBlog(updatedBlog, req.user._id),
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
