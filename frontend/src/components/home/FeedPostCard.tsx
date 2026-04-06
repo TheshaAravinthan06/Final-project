@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/axios";
 import ShareToFollowingModal from "@/components/common/ShareToFollowingModal";
+import CommentsModal from "@/components/common/CommentsModal";
 import {
   FiHeart,
   FiMessageCircle,
@@ -16,6 +17,18 @@ import {
   FiUserMinus,
 } from "react-icons/fi";
 
+type PostComment = {
+  _id: string;
+  text: string;
+  createdAt?: string;
+  replyTo?: string | null;
+  user?: {
+    _id?: string;
+    username?: string;
+    profileImage?: string;
+  };
+};
+
 type FeedPost = {
   _id: string;
   imageUrl: string;
@@ -28,6 +41,7 @@ type FeedPost = {
   shareCount: number;
   isLiked?: boolean;
   isSaved?: boolean;
+  comments?: PostComment[];
   createdBy?: {
     _id: string;
     username: string;
@@ -35,6 +49,10 @@ type FeedPost = {
     profileImage?: string;
     isFollowing?: boolean;
   } | null;
+};
+
+type Props = {
+  post: FeedPost;
 };
 
 const BACKEND_URL =
@@ -72,7 +90,8 @@ const formatTimeAgo = (dateString?: string) => {
   return new Date(dateString).toLocaleDateString();
 };
 
-export default function FeedPostCard({ post }: { post: FeedPost }) {
+export default function FeedPostCard({ post }: Props) {
+  const [postState, setPostState] = useState<FeedPost>(post);
   const [liked, setLiked] = useState(Boolean(post.isLiked));
   const [saved, setSaved] = useState(Boolean(post.isSaved));
   const [likesCount, setLikesCount] = useState(post.likesCount || 0);
@@ -80,7 +99,9 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
   const [shareCount, setShareCount] = useState(post.shareCount || 0);
   const [commentText, setCommentText] = useState("");
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [toast, setToast] = useState("");
+  const [expandedCaption, setExpandedCaption] = useState(false);
 
   const [currentUserId, setCurrentUserId] = useState("");
   const [followLoading, setFollowLoading] = useState(false);
@@ -89,38 +110,45 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
   );
   const [showMenu, setShowMenu] = useState(false);
   const [showUnfollowModal, setShowUnfollowModal] = useState(false);
-  const [expandedCaption, setExpandedCaption] = useState(false);
 
   const menuRef = useRef<HTMLDivElement | null>(null);
   const commentInputRef = useRef<HTMLInputElement | null>(null);
 
-  const username = post.createdBy?.username || "user";
+  const username = postState.createdBy?.username || "user";
   const avatarSrc = useMemo(
-    () => getProfileSrc(post.createdBy?.profileImage),
-    [post.createdBy?.profileImage]
+    () => getProfileSrc(postState.createdBy?.profileImage),
+    [postState.createdBy?.profileImage]
   );
   const postImageSrc = useMemo(
-    () => getImageSrc(post.imageUrl),
-    [post.imageUrl]
+    () => getImageSrc(postState.imageUrl),
+    [postState.imageUrl]
   );
   const timeText = useMemo(
-    () => formatTimeAgo(post.createdAt),
-    [post.createdAt]
+    () => formatTimeAgo(postState.createdAt),
+    [postState.createdAt]
   );
 
-  const captionLimit = 100;
-
-const fullCaption = post.caption || "";
-const shortCaption =
-  fullCaption.length > captionLimit
-    ? `${fullCaption.slice(0, captionLimit).trim()}...`
-    : fullCaption;
-
-const hasLongCaption = fullCaption.length > captionLimit;
-
-  const authorId = post.createdBy?._id || "";
+  const authorId = postState.createdBy?._id || "";
   const isOwnPost = !!currentUserId && currentUserId === authorId;
   const canShowFollow = !!authorId && !isOwnPost && !isFollowing;
+
+  const captionLimit = 100;
+  const fullCaption = postState.caption || "";
+  const shortCaption =
+    fullCaption.length > captionLimit
+      ? `${fullCaption.slice(0, captionLimit).trim()}...`
+      : fullCaption;
+  const hasLongCaption = fullCaption.length > captionLimit;
+
+  useEffect(() => {
+    setPostState(post);
+    setLiked(Boolean(post.isLiked));
+    setSaved(Boolean(post.isSaved));
+    setLikesCount(post.likesCount || 0);
+    setCommentsCount(post.commentsCount || 0);
+    setShareCount(post.shareCount || 0);
+    setIsFollowing(Boolean(post.createdBy?.isFollowing));
+  }, [post]);
 
   useEffect(() => {
     const loadCurrentUser = async () => {
@@ -158,6 +186,24 @@ const hasLongCaption = fullCaption.length > captionLimit;
     window.setTimeout(() => setToast(""), 1500);
   };
 
+  const refreshPost = async () => {
+    try {
+      const res = await api.get(`/user-posts/${postState._id}`);
+      const updatedPost = res.data?.post || res.data;
+
+      if (updatedPost) {
+        setPostState(updatedPost);
+        setLiked(Boolean(updatedPost.isLiked));
+        setSaved(Boolean(updatedPost.isSaved));
+        setLikesCount(updatedPost.likesCount || 0);
+        setCommentsCount(updatedPost.commentsCount || 0);
+        setShareCount(updatedPost.shareCount || 0);
+      }
+    } catch (error) {
+      console.error("Failed to refresh post:", error);
+    }
+  };
+
   const handleLike = async () => {
     const nextLiked = !liked;
     setLiked(nextLiked);
@@ -165,9 +211,9 @@ const hasLongCaption = fullCaption.length > captionLimit;
 
     try {
       if (nextLiked) {
-        await api.post(`/user-posts/${post._id}/like`);
+        await api.post(`/user-posts/${postState._id}/like`);
       } else {
-        await api.post(`/user-posts/${post._id}/unlike`);
+        await api.post(`/user-posts/${postState._id}/unlike`);
       }
     } catch (error) {
       console.error("Like failed:", error);
@@ -189,9 +235,9 @@ const hasLongCaption = fullCaption.length > captionLimit;
 
     try {
       if (nextSaved) {
-        await api.post(`/user-posts/${post._id}/save`);
+        await api.post(`/user-posts/${postState._id}/save`);
       } else {
-        await api.post(`/user-posts/${post._id}/unsave`);
+        await api.post(`/user-posts/${postState._id}/unsave`);
       }
     } catch (error) {
       console.error("Save failed:", error);
@@ -204,15 +250,21 @@ const hasLongCaption = fullCaption.length > captionLimit;
     if (!commentText.trim()) return;
 
     const text = commentText.trim();
-    setCommentText("");
 
     try {
-      await api.post(`/user-posts/${post._id}/comment`, { text });
+      await api.post(`/user-posts/${postState._id}/comment`, { text });
+      setCommentText("");
       setCommentsCount((prev) => prev + 1);
+      await refreshPost();
+      setShowCommentsModal(true);
     } catch (error) {
       console.error("Comment failed:", error);
-      alert("Failed to comment.");
+      showToast("Comment failed");
     }
+  };
+
+  const handleCommentsChanged = async () => {
+    await refreshPost();
   };
 
   const handleShare = () => {
@@ -222,7 +274,7 @@ const hasLongCaption = fullCaption.length > captionLimit;
 
   const handleCopyLink = async () => {
     try {
-      const url = `${window.location.origin}/home?post=${post._id}`;
+      const url = `${window.location.origin}/home?post=${postState._id}`;
       await navigator.clipboard.writeText(url);
       showToast("Link copied");
     } catch (error) {
@@ -264,7 +316,7 @@ const hasLongCaption = fullCaption.length > captionLimit;
 
   const handleReport = async () => {
     try {
-      await api.post(`/user-posts/${post._id}/report`);
+      await api.post(`/user-posts/${postState._id}/report`);
       showToast("Reported");
     } catch (error) {
       console.error("Report failed:", error);
@@ -280,7 +332,7 @@ const hasLongCaption = fullCaption.length > captionLimit;
 
   const handleOwnDelete = async () => {
     try {
-      await api.delete(`/user-posts/${post._id}`);
+      await api.delete(`/user-posts/${postState._id}`);
       setShowMenu(false);
       window.location.reload();
     } catch (error) {
@@ -386,7 +438,7 @@ const hasLongCaption = fullCaption.length > captionLimit;
           className="feed-card__image feed-card__image--square"
           onDoubleClick={handleDoubleClickLike}
         >
-          <img src={postImageSrc} alt={post.caption || "Post image"} />
+          <img src={postImageSrc} alt={postState.caption || "Post image"} />
         </div>
 
         <div className="feed-card__actions feed-card__actions--inline-stats">
@@ -405,7 +457,7 @@ const hasLongCaption = fullCaption.length > captionLimit;
             <button
               type="button"
               className="icon-btn"
-              onClick={() => commentInputRef.current?.focus()}
+              onClick={() => setShowCommentsModal(true)}
             >
               <FiMessageCircle />
             </button>
@@ -432,19 +484,19 @@ const hasLongCaption = fullCaption.length > captionLimit;
 
         <div className="feed-card__body">
           <p className="feed-card__caption">
-  <span className="feed-card__caption-username">{username}</span>{" "}
-  {expandedCaption ? fullCaption : shortCaption}
+            <span className="feed-card__caption-username">{username}</span>{" "}
+            {expandedCaption ? fullCaption : shortCaption}
 
-  {!expandedCaption && hasLongCaption && (
-    <button
-      type="button"
-      className="feed-card__more-btn"
-      onClick={() => setExpandedCaption(true)}
-    >
-      more...
-    </button>
-  )}
-</p>
+            {!expandedCaption && hasLongCaption && (
+              <button
+                type="button"
+                className="feed-card__more-btn"
+                onClick={() => setExpandedCaption(true)}
+              >
+                more...
+              </button>
+            )}
+          </p>
 
           <div className="comment-box feed-card__comment-box">
             <input
@@ -467,10 +519,19 @@ const hasLongCaption = fullCaption.length > captionLimit;
         open={showShareModal}
         onClose={() => setShowShareModal(false)}
         title="Share post"
-        shareText={post.caption || "Check this post"}
+        shareText={postState.caption || "Check this post"}
         shareUrl={`${
           typeof window !== "undefined" ? window.location.origin : ""
-        }/home?post=${post._id}`}
+        }/home?post=${postState._id}`}
+      />
+
+      <CommentsModal
+        open={showCommentsModal}
+        onClose={() => setShowCommentsModal(false)}
+        comments={postState.comments || []}
+        itemId={postState._id}
+        type="post"
+        onDeleted={handleCommentsChanged}
       />
 
       {showUnfollowModal && (

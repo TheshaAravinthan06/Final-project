@@ -102,11 +102,12 @@ const formatPlace = (placeDoc, userId = null) => {
       replyTo: comment.replyTo || null,
       isAdminReply: comment.isAdminReply || false,
       user: comment.user
-        ? {
-            _id: comment.user._id,
-            username: comment.user.username,
-          }
-        : null,
+  ? {
+      _id: comment.user._id,
+      username: comment.user.username,
+      profileImage: comment.user.profileImage,
+    }
+  : null,
     })),
   };
 };
@@ -155,8 +156,8 @@ export const createPlace = async (req, res) => {
     });
 
     const createdPlace = await Place.findById(place._id)
-      .populate("createdBy", "username email role")
-      .populate("comments.user", "username");
+      .populate("createdBy", "username profileImage email role")
+      .populate("comments.user", "username profileImage");
 
     return res.status(201).json({
       message: "Place created successfully",
@@ -172,8 +173,8 @@ export const getAllPlaces = async (req, res) => {
     const userId = getOptionalUserId(req);
 
     const places = await Place.find({ isPublished: true })
-      .populate("createdBy", "username")
-      .populate("comments.user", "username")
+      .populate("createdBy", "username profileImage")
+      .populate("comments.user", "username profileImage")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -195,8 +196,8 @@ export const getPlaceById = async (req, res) => {
     }
 
     const place = await Place.findOne({ _id: id, isPublished: true })
-      .populate("createdBy", "username")
-      .populate("comments.user", "username");
+      .populate("createdBy", "username profileImage")
+      .populate("comments.user", "username profileImage");
 
     if (!place) {
       return res.status(404).json({ message: "Place not found" });
@@ -211,8 +212,8 @@ export const getPlaceById = async (req, res) => {
 export const adminGetAllPlaces = async (req, res) => {
   try {
     const places = await Place.find()
-      .populate("createdBy", "username email role")
-      .populate("comments.user", "username")
+      .populate("createdBy", "username profileImage email role")
+      .populate("comments.user", "username profileImage")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -233,8 +234,8 @@ export const adminGetPlaceById = async (req, res) => {
     }
 
     const place = await Place.findById(id)
-      .populate("createdBy", "username email role")
-      .populate("comments.user", "username");
+      .populate("createdBy", "username profileImage email role")
+      .populate("comments.user", "username profileImage");
 
     if (!place) {
       return res.status(404).json({ message: "Place not found" });
@@ -294,8 +295,8 @@ export const updatePlace = async (req, res) => {
     await place.save();
 
     const updatedPlace = await Place.findById(place._id)
-      .populate("createdBy", "username email role")
-      .populate("comments.user", "username");
+      .populate("createdBy", "username profileImage email role")
+      .populate("comments.user", "username profileImage");
 
     return res.status(200).json({
       message: "Place updated successfully",
@@ -336,8 +337,8 @@ export const togglePlaceLike = async (req, res) => {
     }
 
     const place = await Place.findById(id)
-      .populate("createdBy", "username")
-      .populate("comments.user", "username");
+      .populate("createdBy", "username profileImage")
+      .populate("comments.user", "username profileImage");
 
     if (!place || !place.isPublished) {
       return res.status(404).json({ message: "Place not found" });
@@ -383,8 +384,8 @@ export const togglePlaceSave = async (req, res) => {
     }
 
     const place = await Place.findById(id)
-      .populate("createdBy", "username")
-      .populate("comments.user", "username");
+      .populate("createdBy", "username profileImage")
+      .populate("comments.user", "username profileImage");
 
     if (!place || !place.isPublished) {
       return res.status(404).json({ message: "Place not found" });
@@ -479,8 +480,8 @@ export const addPlaceComment = async (req, res) => {
     }
 
     const updatedPlace = await Place.findById(id)
-      .populate("createdBy", "username")
-      .populate("comments.user", "username");
+      .populate("createdBy", "username profileImage")
+      .populate("comments.user", "username profileImage");
 
     return res.status(201).json({
       message: "Comment added successfully",
@@ -513,8 +514,8 @@ export const deletePlaceComment = async (req, res) => {
     await place.save();
 
     const updatedPlace = await Place.findById(id)
-      .populate("createdBy", "username")
-      .populate("comments.user", "username");
+      .populate("createdBy", "username profileImage")
+      .populate("comments.user", "username profileImage");
 
     return res.status(200).json({
       message: "Comment deleted successfully",
@@ -534,8 +535,8 @@ export const incrementPlaceShare = async (req, res) => {
     }
 
     const place = await Place.findById(id)
-      .populate("createdBy", "username")
-      .populate("comments.user", "username");
+      .populate("createdBy", "username profileImage")
+      .populate("comments.user", "username profileImage");
 
     if (!place || !place.isPublished) {
       return res.status(404).json({ message: "Place not found" });

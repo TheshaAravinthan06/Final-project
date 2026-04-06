@@ -7,46 +7,49 @@ import FloatingAIChat from "@/components/ai/FloatingAIChat";
 type Position = { x: number; y: number };
 
 export default function GlobalAIWidget() {
-  const [isOpen, setIsOpen]     = useState(false);
-  const [mounted, setMounted]   = useState(false);
-  const [dragging, setDragging] = useState(false);
-  const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
+  const [isOpen,    setIsOpen]    = useState(false);
+  const [mounted,   setMounted]   = useState(false);
+  const [dragging,  setDragging]  = useState(false);
+  const [position,  setPosition]  = useState<Position>({ x: 0, y: 0 });
+  const [showLabel, setShowLabel] = useState(true);
 
-  const widgetRef    = useRef<HTMLDivElement | null>(null);
-  const dragOffset   = useRef({ x: 0, y: 0 });
-  const isDragging   = useRef(false);
-  const hasDragged   = useRef(false);
+  const widgetRef   = useRef<HTMLDivElement | null>(null);
+  const dragOffset  = useRef({ x: 0, y: 0 });
+  const isDragging  = useRef(false);
+  const hasDragged  = useRef(false);
 
-  /* set initial position bottom-right */
   useEffect(() => {
     setMounted(true);
     setPosition({
-      x: window.innerWidth  - 84,
-      y: window.innerHeight - 84,
+      x: window.innerWidth  - 88,
+      y: window.innerHeight - 88,
     });
+
+    // Hide the label after 6 seconds
+    const t = setTimeout(() => setShowLabel(false), 6000);
+    return () => clearTimeout(t);
   }, []);
 
-  /* global mouse move / up */
+  // Hide label when chat opens
+  useEffect(() => {
+    if (isOpen) setShowLabel(false);
+  }, [isOpen]);
+
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!isDragging.current) return;
       hasDragged.current = true;
 
-      const PANEL_W  = 352;
-      const PANEL_H  = 496;
-      const BTN_SIZE = 58;
+      const BTN   = 60;
+      const PAN_W = 360;
+      const PAN_H = 520;
 
       const nextX = e.clientX - dragOffset.current.x;
       const nextY = e.clientY - dragOffset.current.y;
 
-      const minX = 8;
-      const minY = isOpen ? PANEL_H + 20 : 8;
-      const maxX = window.innerWidth  - (isOpen ? PANEL_W : BTN_SIZE) - 8;
-      const maxY = window.innerHeight - BTN_SIZE - 8;
-
       setPosition({
-        x: Math.max(minX, Math.min(nextX, maxX)),
-        y: Math.max(minY, Math.min(nextY, maxY)),
+        x: Math.max(8, Math.min(nextX, window.innerWidth  - (isOpen ? PAN_W : BTN) - 8)),
+        y: Math.max(isOpen ? PAN_H + 20 : 8, Math.min(nextY, window.innerHeight - BTN - 8)),
       });
     };
 
@@ -67,19 +70,14 @@ export default function GlobalAIWidget() {
     e.preventDefault();
     const rect = widgetRef.current?.getBoundingClientRect();
     if (!rect) return;
-
-    isDragging.current  = true;
-    hasDragged.current  = false;
+    isDragging.current = true;
+    hasDragged.current = false;
     setDragging(true);
-    dragOffset.current  = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
+    dragOffset.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
 
-  /* toggle open — but not if we just finished dragging */
   const handleButtonClick = () => {
-    if (hasDragged.current) return;
+    if (hasDragged.current) { hasDragged.current = false; return; }
     setIsOpen((v) => !v);
   };
 
@@ -91,16 +89,16 @@ export default function GlobalAIWidget() {
       className={`floating-ai-wrapper ${dragging ? "is-dragging" : ""}`}
       style={{ left: position.x, top: position.y, right: "auto", bottom: "auto" }}
     >
-      {/* Chat panel — slides in above the button */}
+      {/* Chat popup panel */}
       {isOpen && (
         <div className="floating-ai-drag-shell">
-          {/* Drag handle */}
+          {/* Drag handle — bottom of header */}
           <div
             className="floating-ai-drag-handle"
             onMouseDown={startDrag}
             role="button"
             tabIndex={0}
-            aria-label="Drag AI chat"
+            aria-label="Drag chat"
           >
             <span /><span /><span />
           </div>
@@ -110,24 +108,32 @@ export default function GlobalAIWidget() {
             type="button"
             className="floating-ai-panel-close"
             onClick={() => setIsOpen(false)}
-            aria-label="Close AI chat"
+            aria-label="Close chat"
           >
             <FiX />
           </button>
 
+          {/* The real FloatingAIChat component */}
           <FloatingAIChat isOpen={isOpen} onClose={() => setIsOpen(false)} />
         </div>
       )}
 
-      {/* Floating launch button */}
+      {/* Animated "Let's plan!" label */}
+      {showLabel && !isOpen && (
+        <div className="floating-ai-label">
+          <span>Let&apos;s plan! ✦</span>
+        </div>
+      )}
+
+      {/* Floating button — always FiMessageCircle */}
       <button
         type="button"
         className="floating-ai-btn"
         onMouseDown={startDrag}
         onClick={handleButtonClick}
-        aria-label={isOpen ? "Close AI chat" : "Open AI chat"}
+        aria-label="Open AI trip planner"
       >
-        {isOpen ? <FiX /> : <FiMessageCircle />}
+        <FiMessageCircle />
       </button>
     </div>
   );

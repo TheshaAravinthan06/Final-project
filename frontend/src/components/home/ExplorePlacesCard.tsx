@@ -10,6 +10,7 @@ import {
 } from "react-icons/fi";
 import api from "@/lib/axios";
 import ShareToFollowingModal from "@/components/common/ShareToFollowingModal";
+import CommentsModal from "@/components/common/CommentsModal";
 
 type PlaceComment = {
   _id: string;
@@ -69,11 +70,12 @@ const getPlaceImageSrc = (imageUrl?: string) => {
 
 export default function ExplorePlacesCard({ place, onPlaceUpdated }: Props) {
   const [commentText, setCommentText] = useState("");
-  const [showComments, setShowComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [toast, setToast] = useState("");
-const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
+
   const commentInputRef = useRef<HTMLInputElement | null>(null);
 
   const imageSrc = useMemo(
@@ -136,11 +138,21 @@ const [showMoreDetails, setShowMoreDetails] = useState(false);
 
       onPlaceUpdated(res.data.place);
       setCommentText("");
-      setShowComments(true);
+      setShowCommentsModal(true);
     } catch (error) {
       console.error("Comment failed:", error);
     } finally {
       setSubmittingComment(false);
+    }
+  };
+
+  const handleRefreshAfterDelete = async () => {
+    try {
+      const res = await api.get(`/places/${place._id}`);
+      onPlaceUpdated(res.data.place || res.data);
+    } catch (error) {
+      console.error("Failed to refresh place comments:", error);
+      window.location.reload();
     }
   };
 
@@ -192,12 +204,7 @@ const [showMoreDetails, setShowMoreDetails] = useState(false);
             <button
               type="button"
               className="icon-btn"
-              onClick={() => {
-                setShowComments(true);
-                setTimeout(() => {
-                  commentInputRef.current?.focus();
-                }, 0);
-              }}
+              onClick={() => setShowCommentsModal(true)}
             >
               <FiMessageCircle />
             </button>
@@ -242,55 +249,55 @@ const [showMoreDetails, setShowMoreDetails] = useState(false);
             </div>
           )}
 
-         {(place.bestTime || place.weather || place.vibe || place.travelTip) && (
-  <div className="place-more-toggle-wrap">
-    {!showMoreDetails ? (
-      <button
-        type="button"
-        className="place-more-btn"
-        onClick={() => setShowMoreDetails(true)}
-      >
-        more...
-      </button>
-    ) : (
-      <>
-        <div className="place-extra">
-          {place.bestTime && (
-            <p>
-              <strong>Best time:</strong> {place.bestTime}
-            </p>
-          )}
+          {(place.bestTime || place.weather || place.vibe || place.travelTip) && (
+            <div className="place-more-toggle-wrap">
+              {!showMoreDetails ? (
+                <button
+                  type="button"
+                  className="place-more-btn"
+                  onClick={() => setShowMoreDetails(true)}
+                >
+                  more...
+                </button>
+              ) : (
+                <>
+                  <div className="place-extra">
+                    {place.bestTime && (
+                      <p>
+                        <strong>Best time:</strong> {place.bestTime}
+                      </p>
+                    )}
 
-          {place.weather && (
-            <p>
-              <strong>Weather:</strong> {place.weather}
-            </p>
-          )}
+                    {place.weather && (
+                      <p>
+                        <strong>Weather:</strong> {place.weather}
+                      </p>
+                    )}
 
-          {place.vibe && (
-            <p>
-              <strong>Vibe:</strong> {place.vibe}
-            </p>
-          )}
+                    {place.vibe && (
+                      <p>
+                        <strong>Vibe:</strong> {place.vibe}
+                      </p>
+                    )}
 
-          {place.travelTip && (
-            <p>
-              <strong>Tip:</strong> {place.travelTip}
-            </p>
-          )}
-        </div>
+                    {place.travelTip && (
+                      <p>
+                        <strong>Tip:</strong> {place.travelTip}
+                      </p>
+                    )}
+                  </div>
 
-        <button
-          type="button"
-          className="place-more-btn"
-          onClick={() => setShowMoreDetails(false)}
-        >
-          less
-        </button>
-      </>
-    )}
-  </div>
-)}
+                  <button
+                    type="button"
+                    className="place-more-btn"
+                    onClick={() => setShowMoreDetails(false)}
+                  >
+                    less
+                  </button>
+                </>
+              )}
+            </div>
+          )}
 
           <div className="comment-box place-card__comment-box">
             <input
@@ -309,21 +316,6 @@ const [showMoreDetails, setShowMoreDetails] = useState(false);
               {submittingComment ? "Posting..." : "Post"}
             </button>
           </div>
-
-          {showComments && (
-            <div className="comment-list">
-              {(place.comments || []).length === 0 ? (
-                <p className="comment-empty">No comments yet.</p>
-              ) : (
-                (place.comments || []).map((comment) => (
-                  <div key={comment._id} className="comment-item">
-                    <strong>{comment.user?.username || "user"}</strong>
-                    <span>{comment.text}</span>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
         </div>
 
         <ShareToFollowingModal
@@ -334,6 +326,15 @@ const [showMoreDetails, setShowMoreDetails] = useState(false);
           shareUrl={`${
             typeof window !== "undefined" ? window.location.origin : ""
           }/home?place=${place._id}`}
+        />
+
+        <CommentsModal
+          open={showCommentsModal}
+          onClose={() => setShowCommentsModal(false)}
+          comments={place.comments || []}
+          itemId={place._id}
+          type="place"
+          onDeleted={handleRefreshAfterDelete}
         />
       </article>
 

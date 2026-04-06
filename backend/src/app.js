@@ -19,6 +19,9 @@ import searchRoutes from "./routes/search.routes.js";
 import blogRoutes from "./routes/userBlog.routes.js";
 import conversationRoutes from "./routes/conversation.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
+import bookingItineraryRoutes from "./routes/bookingItinerary.routes.js";
+
+
 
 
 const app = express();
@@ -75,5 +78,5 @@ app.use("/search", searchRoutes);
 app.use("/blogs", blogRoutes);
 app.use("/conversations", conversationRoutes);
 app.use("/ai", aiRoutes);
-
+app.use("/api/booking-itineraries", bookingItineraryRoutes);
 export default app;

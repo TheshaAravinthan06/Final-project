@@ -2,34 +2,64 @@ import mongoose from "mongoose";
 
 const itinerarySchema = new mongoose.Schema(
   {
-    mood: String,
-    selectedPlaces: [String],
-    selectedActivities: [
+    mood: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    selectedPlaces: [
       {
-        place: String,
-        activities: [String],
+        type: String,
+        trim: true,
       },
     ],
-    days: Number,
-    specificDate: String,
+    selectedActivities: [
+      {
+        place: {
+          type: String,
+          trim: true,
+        },
+        activities: [
+          {
+            type: String,
+            trim: true,
+          },
+        ],
+      },
+    ],
+    days: {
+      type: Number,
+      required: true,
+    },
+    specificDate: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    peopleCount: {
+      type: Number,
+      required: true,
+    },
     travelCompanions: [
       {
         type: String,
+        trim: true,
       },
     ],
     customCompanionNote: {
       type: String,
       default: "",
+      trim: true,
     },
     extraNotes: {
       type: String,
       default: "",
+      trim: true,
     },
-    travelMode: {
+    itineraryText: {
       type: String,
-      enum: ["solo", "friends", "strangers"],
+      required: true,
     },
-    itineraryText: String,
     status: {
       type: String,
       enum: ["saved", "sent_to_admin"],

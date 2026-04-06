@@ -61,10 +61,12 @@ const formatUserPost = (postDoc, userId = null) => {
       _id: comment._id,
       text: comment.text,
       createdAt: comment.createdAt,
+      replyTo: comment.replyTo || null,
       user: comment.user
         ? {
             _id: comment.user._id,
             username: comment.user.username,
+            profileImage: comment.user.profileImage || "",
           }
         : null,
     })),
@@ -92,7 +94,7 @@ export const createUserPost = async (req, res) => {
 
     const createdPost = await UserPost.findById(post._id)
       .populate("createdBy", "username name profileImage")
-      .populate("comments.user", "username");
+      .populate("comments.user", "username profileImage");
 
     return res.status(201).json({
       message: "User post created successfully",
@@ -110,12 +112,44 @@ export const getAllUserPosts = async (req, res) => {
 
     const posts = await UserPost.find({ isPublished: { $ne: false } })
       .populate("createdBy", "username name profileImage")
-      .populate("comments.user", "username")
+      .populate("comments.user", "username profileImage")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
       count: posts.length,
       posts: posts.map((post) => formatUserPost(post, userId)),
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// GET SINGLE USER POST
+export const getUserPostById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const viewerId = getOptionalUserId(req);
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid post id" });
+    }
+
+    const post = await UserPost.findById(id)
+      .populate("createdBy", "username name profileImage")
+      .populate("comments.user", "username profileImage");
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    if (post.isPublished === false) {
+      if (!viewerId || String(post.createdBy?._id || post.createdBy) !== String(viewerId)) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+    }
+
+    return res.status(200).json({
+      post: formatUserPost(post, viewerId),
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -139,7 +173,7 @@ export const getPostsByUserId = async (req, res) => {
 
     const posts = await UserPost.find(query)
       .populate("createdBy", "username name profileImage")
-      .populate("comments.user", "username")
+      .populate("comments.user", "username profileImage")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -181,7 +215,7 @@ export const updateUserPost = async (req, res) => {
 
     const updatedPost = await UserPost.findById(post._id)
       .populate("createdBy", "username name profileImage")
-      .populate("comments.user", "username");
+      .populate("comments.user", "username profileImage");
 
     return res.status(200).json({
       message: "Post updated successfully",
@@ -216,7 +250,7 @@ export const toggleUserPostVisibility = async (req, res) => {
 
     const updatedPost = await UserPost.findById(post._id)
       .populate("createdBy", "username name profileImage")
-      .populate("comments.user", "username");
+      .populate("comments.user", "username profileImage");
 
     return res.status(200).json({
       message:
@@ -268,7 +302,7 @@ export const likeUserPost = async (req, res) => {
 
     const post = await UserPost.findById(id)
       .populate("createdBy", "username name profileImage")
-      .populate("comments.user", "username");
+      .populate("comments.user", "username profileImage");
 
     if (!post || post.isPublished === false) {
       return res.status(404).json({ message: "Post not found" });
@@ -318,7 +352,7 @@ export const unlikeUserPost = async (req, res) => {
 
     const post = await UserPost.findById(id)
       .populate("createdBy", "username name profileImage")
-      .populate("comments.user", "username");
+      .populate("comments.user", "username profileImage");
 
     if (!post || post.isPublished === false) {
       return res.status(404).json({ message: "Post not found" });
@@ -358,7 +392,7 @@ export const saveUserPost = async (req, res) => {
 
     const post = await UserPost.findById(id)
       .populate("createdBy", "username name profileImage")
-      .populate("comments.user", "username");
+      .populate("comments.user", "username profileImage");
 
     if (!post || post.isPublished === false) {
       return res.status(404).json({ message: "Post not found" });
@@ -395,7 +429,7 @@ export const unsaveUserPost = async (req, res) => {
 
     const post = await UserPost.findById(id)
       .populate("createdBy", "username name profileImage")
-      .populate("comments.user", "username");
+      .populate("comments.user", "username profileImage");
 
     if (!post || post.isPublished === false) {
       return res.status(404).json({ message: "Post not found" });
@@ -428,7 +462,7 @@ export const unsaveUserPost = async (req, res) => {
 export const addCommentToUserPost = async (req, res) => {
   try {
     const { id } = req.params;
-    const { text } = req.body;
+    const { text, replyTo } = req.body;
 
     if (!isValidObjectId(id)) {
       return res.status(400).json({ message: "Invalid post id" });
@@ -447,11 +481,13 @@ export const addCommentToUserPost = async (req, res) => {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    const trimmedText = text.trim();
-
     post.comments.push({
       user: req.user._id,
-      text: trimmedText,
+      text: text.trim(),
+      replyTo:
+        replyTo && isValidObjectId(replyTo)
+          ? new mongoose.Types.ObjectId(replyTo)
+          : null,
     });
 
     await post.save();
@@ -471,7 +507,7 @@ export const addCommentToUserPost = async (req, res) => {
 
     const updatedPost = await UserPost.findById(id)
       .populate("createdBy", "username name profileImage")
-      .populate("comments.user", "username");
+      .populate("comments.user", "username profileImage");
 
     return res.status(201).json({
       message: "Comment added successfully",
@@ -485,13 +521,13 @@ export const addCommentToUserPost = async (req, res) => {
 // DELETE COMMENT
 export const deleteCommentFromUserPost = async (req, res) => {
   try {
-    const { postId, commentId } = req.params;
+    const { id, commentId } = req.params;
 
-    if (!isValidObjectId(postId) || !isValidObjectId(commentId)) {
+    if (!isValidObjectId(id) || !isValidObjectId(commentId)) {
       return res.status(400).json({ message: "Invalid id" });
     }
 
-    const post = await UserPost.findById(postId);
+    const post = await UserPost.findById(id);
 
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
@@ -503,16 +539,19 @@ export const deleteCommentFromUserPost = async (req, res) => {
       return res.status(404).json({ message: "Comment not found" });
     }
 
-    if (String(comment.user) !== String(req.user._id)) {
+    if (
+      String(comment.user) !== String(req.user._id) &&
+      req.user.role !== "admin"
+    ) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
     comment.deleteOne();
     await post.save();
 
-    const updatedPost = await UserPost.findById(postId)
+    const updatedPost = await UserPost.findById(id)
       .populate("createdBy", "username name profileImage")
-      .populate("comments.user", "username");
+      .populate("comments.user", "username profileImage");
 
     return res.status(200).json({
       message: "Comment deleted successfully",
