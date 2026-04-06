@@ -1,15 +1,20 @@
 import express from "express";
 import {
-  generateMoodItinerary,
-  saveGeneratedItinerary,
-  sendGeneratedItineraryToAdmin,
+  getPlacesByMood,
+  getActivitiesByPlaces,
+  createItinerary,
+  saveItinerary,
+  sendItineraryToAdmin,
+  getSavedItineraries,
 } from "../controllers/ai.controller.js";
-import { protect } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-router.post("/generate", generateMoodItinerary);
-router.post("/save-itinerary", protect, saveGeneratedItinerary);
-router.post("/send-itinerary-to-admin", protect, sendGeneratedItineraryToAdmin);
+router.post("/places-by-mood", getPlacesByMood);
+router.post("/activities-by-places", getActivitiesByPlaces);
+router.post("/create-itinerary", createItinerary);
+router.post("/save-itinerary", saveItinerary);
+router.post("/send-itinerary-to-admin", sendItineraryToAdmin);
+router.get("/saved-itineraries", getSavedItineraries);
 
 export default router;

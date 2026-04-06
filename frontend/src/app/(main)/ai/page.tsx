@@ -1,10 +1,12 @@
 "use client";
-
+import { useState } from "react";
 import "@/styles/ai-page.scss";
 import FloatingAIChat from "@/components/ai/FloatingAIChat";
 import { FiCompass, FiBookmark, FiSend, FiMapPin } from "react-icons/fi";
+import SavedItineraries from "@/components/ai/SavedItineraries";
 
 export default function AIPlannerPage() {
+  const [activeTab, setActiveTab] = useState("new");
   return (
     <div className="ai-page">
       <div className="ai-page__shell">
@@ -22,12 +24,20 @@ export default function AIPlannerPage() {
           </div>
 
           <div className="ai-page__menu">
-            <button type="button" className="active">
+            <button
+              type="button"
+              className={activeTab === "new" ? "active" : ""}
+              onClick={() => setActiveTab("new")}
+            >
               <FiCompass />
               <span>New Plan</span>
             </button>
 
-            <button type="button">
+            <button
+              type="button"
+              className={activeTab === "saved" ? "active" : ""}
+              onClick={() => setActiveTab("saved")}
+            >
               <FiBookmark />
               <span>Saved Itineraries</span>
             </button>
@@ -62,10 +72,15 @@ export default function AIPlannerPage() {
               Share
             </button>
           </div>
+<div className="ai-page__chat-stream">
+  {activeTab === "new" && (
+    <FloatingAIChat isOpen={true} onClose={() => {}} fullPage />
+  )}
 
-          <div className="ai-page__chat-stream">
-            <FloatingAIChat isOpen={true} onClose={() => {}} fullPage />
-          </div>
+  {activeTab === "saved" && (
+    <SavedItineraries />
+  )}
+</div>
         </section>
       </div>
     </div>
