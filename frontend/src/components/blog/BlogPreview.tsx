@@ -58,6 +58,7 @@ const getProfileSrc = (profileImage?: string) => {
 
 const formatTimeAgo = (dateString?: string) => {
   if (!dateString) return "";
+
   const now = new Date().getTime();
   const created = new Date(dateString).getTime();
   const diffMs = now - created;
@@ -94,6 +95,7 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
   );
   const [showMenu, setShowMenu] = useState(false);
   const [showUnfollowModal, setShowUnfollowModal] = useState(false);
+  const [expandedCaption, setExpandedCaption] = useState(false);
 
   const menuRef = useRef<HTMLDivElement | null>(null);
   const commentInputRef = useRef<HTMLInputElement | null>(null);
@@ -103,14 +105,29 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
     () => getProfileSrc(blog.author?.profileImage),
     [blog.author?.profileImage]
   );
-  const coverSrc = useMemo(() => getImageSrc(blog.coverImage), [blog.coverImage]);
-  const timeText = useMemo(() => formatTimeAgo(blog.createdAt), [blog.createdAt]);
+  const coverSrc = useMemo(
+    () => getImageSrc(blog.coverImage),
+    [blog.coverImage]
+  );
+  const timeText = useMemo(
+    () => formatTimeAgo(blog.createdAt),
+    [blog.createdAt]
+  );
 
   const previewText =
     blog.excerpt?.trim() ||
     `${blog.content?.trim()?.slice(0, 160) || ""}${
       (blog.content?.length || 0) > 160 ? "..." : ""
     }`;
+
+    const captionLimit = 90;
+
+const shortCaption =
+  previewText.length > captionLimit
+    ? `${previewText.slice(0, captionLimit).trim()}...`
+    : previewText;
+
+const hasLongCaption = previewText.length > captionLimit;
 
   const authorId = blog.author?._id || "";
   const isOwnBlog = !!currentUserId && currentUserId === authorId;
@@ -149,7 +166,7 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
 
   const showToast = (text: string) => {
     setToast(text);
-    window.setTimeout(() => setToast(""), 1800);
+    window.setTimeout(() => setToast(""), 1500);
   };
 
   const handleLike = async () => {
@@ -179,19 +196,18 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
   const handleSave = async () => {
     const nextSaved = !saved;
     setSaved(nextSaved);
-    setToast(saved ? "Removed" : "Saved");
-    setTimeout(() => setToast(""), 1500);
+    showToast(nextSaved ? "Saved" : "Removed");
 
     try {
       if (nextSaved) {
         await api.post(`/blogs/${blog._id}/save`);
-        showToast("Saved to Blogs");
       } else {
         await api.post(`/blogs/${blog._id}/unsave`);
       }
     } catch (error) {
       console.error("Blog save failed:", error);
       setSaved(!nextSaved);
+      showToast("Save failed");
     }
   };
 
@@ -214,6 +230,7 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
     try {
       const url = `${window.location.origin}/blogs/${blog._id}`;
       await navigator.clipboard.writeText(url);
+      showToast("Link copied");
     } catch (error) {
       console.error("Copy link failed:", error);
     } finally {
@@ -259,6 +276,7 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
   const handleReport = async () => {
     try {
       await api.post(`/blogs/${blog._id}/report`);
+      showToast("Reported");
     } catch (error) {
       console.error("Report failed:", error);
     } finally {
@@ -296,8 +314,6 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
   return (
     <>
       <article className="blog-feed-card">
-        {toast ? <div className="save-toast">{toast}</div> : null}
-
         <div className="blog-feed-card__header">
           <div className="blog-feed-card__user">
             <img src={avatarSrc} alt={username} />
@@ -394,7 +410,10 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
           </div>
         </div>
 
-        <div className="blog-feed-card__content-wrap" onDoubleClick={handleDoubleClickLike}>
+        <div
+          className="blog-feed-card__content-wrap"
+          onDoubleClick={handleDoubleClickLike}
+        >
           <div className="blog-feed-card__image">
             <img src={coverSrc} alt={blog.title} />
           </div>
@@ -402,9 +421,11 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
           <div className="blog-feed-card__content">
             <div className="blog-feed-card__content-top">
               <h3>{blog.title}</h3>
+
               {blog.location ? (
                 <span className="blog-feed-card__location">{blog.location}</span>
               ) : null}
+
               <p>{previewText}</p>
             </div>
 
@@ -450,7 +471,9 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
 
           <button
             type="button"
-            className={`icon-btn feed-save-btn ${saved ? "icon-btn--saved" : ""}`}
+            className={`icon-btn feed-save-btn ${
+              saved ? "icon-btn--saved" : ""
+            }`}
             onClick={handleSave}
           >
             <FiBookmark />
@@ -458,9 +481,20 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
         </div>
 
         <div className="blog-feed-card__footer">
-          <p className="blog-feed-card__caption">
-            <span>{username}</span> {previewText}
-          </p>
+         <p className="blog-feed-card__caption">
+  <span className="blog-feed-card__caption-username">{username}</span>{" "}
+  {expandedCaption ? previewText : shortCaption}
+
+  {!expandedCaption && hasLongCaption && (
+    <button
+      type="button"
+      className="blog-feed-card__more-btn"
+      onClick={() => setExpandedCaption(true)}
+    >
+      more...
+    </button>
+  )}
+</p>
 
           <div className="comment-box blog-feed-card__comment-box">
             <input
@@ -476,6 +510,7 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
           </div>
         </div>
       </article>
+
       {toast && <div className="save-toast">{toast}</div>}
 
       <ShareToFollowingModal
@@ -483,7 +518,9 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
         onClose={() => setShowShareModal(false)}
         title="Share blog"
         shareText={blog.title || "Check this blog"}
-        shareUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/blogs/${blog._id}`}
+        shareUrl={`${
+          typeof window !== "undefined" ? window.location.origin : ""
+        }/blogs/${blog._id}`}
       />
 
       {showUnfollowModal && (
@@ -516,7 +553,6 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
             </div>
           </div>
         </div>
-        
       )}
     </>
   );

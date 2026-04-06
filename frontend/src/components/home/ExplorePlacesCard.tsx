@@ -73,7 +73,7 @@ export default function ExplorePlacesCard({ place, onPlaceUpdated }: Props) {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [toast, setToast] = useState("");
-
+const [showMoreDetails, setShowMoreDetails] = useState(false);
   const commentInputRef = useRef<HTMLInputElement | null>(null);
 
   const imageSrc = useMemo(
@@ -83,7 +83,9 @@ export default function ExplorePlacesCard({ place, onPlaceUpdated }: Props) {
 
   const showToast = (message: string) => {
     setToast(message);
-    window.setTimeout(() => setToast(""), 1500);
+    setTimeout(() => {
+      setToast("");
+    }, 1500);
   };
 
   const handleLike = async () => {
@@ -116,11 +118,10 @@ export default function ExplorePlacesCard({ place, onPlaceUpdated }: Props) {
     try {
       const res = await api.post(`/places/${place._id}/share`);
       onPlaceUpdated(res.data.place);
+      setShowShareModal(true);
     } catch (error) {
       console.error("Share failed:", error);
     }
-
-    setShowShareModal(true);
   };
 
   const handleCommentSubmit = async () => {
@@ -149,8 +150,9 @@ export default function ExplorePlacesCard({ place, onPlaceUpdated }: Props) {
         <div className="feed-card__header">
           <div className="feed-card__user">
             <div className="place-avatar">
-              {place.placeName?.charAt(0) || "P"}
+              {place.placeName?.charAt(0)?.toUpperCase() || "P"}
             </div>
+
             <div>
               <h4>{place.placeName}</h4>
               <p>by {place.createdBy?.username || "admin"} · Explore Places</p>
@@ -167,7 +169,6 @@ export default function ExplorePlacesCard({ place, onPlaceUpdated }: Props) {
             src={imageSrc}
             alt={place.placeName}
             onError={(e) => {
-              console.error("Image failed to load:", imageSrc);
               e.currentTarget.src = "/images/ella.jpg";
             }}
           />
@@ -193,7 +194,9 @@ export default function ExplorePlacesCard({ place, onPlaceUpdated }: Props) {
               className="icon-btn"
               onClick={() => {
                 setShowComments(true);
-                commentInputRef.current?.focus();
+                setTimeout(() => {
+                  commentInputRef.current?.focus();
+                }, 0);
               }}
             >
               <FiMessageCircle />
@@ -239,28 +242,55 @@ export default function ExplorePlacesCard({ place, onPlaceUpdated }: Props) {
             </div>
           )}
 
-          <div className="place-extra">
-            {place.bestTime && (
-              <p>
-                <strong>Best time:</strong> {place.bestTime}
-              </p>
-            )}
-            {place.weather && (
-              <p>
-                <strong>Weather:</strong> {place.weather}
-              </p>
-            )}
-            {place.vibe && (
-              <p>
-                <strong>Vibe:</strong> {place.vibe}
-              </p>
-            )}
-            {place.travelTip && (
-              <p>
-                <strong>Tip:</strong> {place.travelTip}
-              </p>
-            )}
-          </div>
+         {(place.bestTime || place.weather || place.vibe || place.travelTip) && (
+  <div className="place-more-toggle-wrap">
+    {!showMoreDetails ? (
+      <button
+        type="button"
+        className="place-more-btn"
+        onClick={() => setShowMoreDetails(true)}
+      >
+        more...
+      </button>
+    ) : (
+      <>
+        <div className="place-extra">
+          {place.bestTime && (
+            <p>
+              <strong>Best time:</strong> {place.bestTime}
+            </p>
+          )}
+
+          {place.weather && (
+            <p>
+              <strong>Weather:</strong> {place.weather}
+            </p>
+          )}
+
+          {place.vibe && (
+            <p>
+              <strong>Vibe:</strong> {place.vibe}
+            </p>
+          )}
+
+          {place.travelTip && (
+            <p>
+              <strong>Tip:</strong> {place.travelTip}
+            </p>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className="place-more-btn"
+          onClick={() => setShowMoreDetails(false)}
+        >
+          less
+        </button>
+      </>
+    )}
+  </div>
+)}
 
           <div className="comment-box place-card__comment-box">
             <input
@@ -270,6 +300,7 @@ export default function ExplorePlacesCard({ place, onPlaceUpdated }: Props) {
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
             />
+
             <button
               type="button"
               onClick={handleCommentSubmit}

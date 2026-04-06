@@ -54,6 +54,7 @@ const getProfileSrc = (profileImage?: string) => {
 
 const formatTimeAgo = (dateString?: string) => {
   if (!dateString) return "";
+
   const now = new Date().getTime();
   const created = new Date(dateString).getTime();
   const diffMs = now - created;
@@ -79,17 +80,16 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
   const [shareCount, setShareCount] = useState(post.shareCount || 0);
   const [commentText, setCommentText] = useState("");
   const [showShareModal, setShowShareModal] = useState(false);
+  const [toast, setToast] = useState("");
 
   const [currentUserId, setCurrentUserId] = useState("");
   const [followLoading, setFollowLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(
     Boolean(post.createdBy?.isFollowing)
   );
-
   const [showMenu, setShowMenu] = useState(false);
   const [showUnfollowModal, setShowUnfollowModal] = useState(false);
-
-  const [toast, setToast] = useState("");
+  const [expandedCaption, setExpandedCaption] = useState(false);
 
   const menuRef = useRef<HTMLDivElement | null>(null);
   const commentInputRef = useRef<HTMLInputElement | null>(null);
@@ -99,8 +99,24 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
     () => getProfileSrc(post.createdBy?.profileImage),
     [post.createdBy?.profileImage]
   );
-  const postImageSrc = useMemo(() => getImageSrc(post.imageUrl), [post.imageUrl]);
-  const timeText = useMemo(() => formatTimeAgo(post.createdAt), [post.createdAt]);
+  const postImageSrc = useMemo(
+    () => getImageSrc(post.imageUrl),
+    [post.imageUrl]
+  );
+  const timeText = useMemo(
+    () => formatTimeAgo(post.createdAt),
+    [post.createdAt]
+  );
+
+  const captionLimit = 100;
+
+const fullCaption = post.caption || "";
+const shortCaption =
+  fullCaption.length > captionLimit
+    ? `${fullCaption.slice(0, captionLimit).trim()}...`
+    : fullCaption;
+
+const hasLongCaption = fullCaption.length > captionLimit;
 
   const authorId = post.createdBy?._id || "";
   const isOwnPost = !!currentUserId && currentUserId === authorId;
@@ -137,6 +153,11 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
     };
   }, [showMenu]);
 
+  const showToast = (text: string) => {
+    setToast(text);
+    window.setTimeout(() => setToast(""), 1500);
+  };
+
   const handleLike = async () => {
     const nextLiked = !liked;
     setLiked(nextLiked);
@@ -164,8 +185,7 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
   const handleSave = async () => {
     const nextSaved = !saved;
     setSaved(nextSaved);
-    setToast(saved ? "Removed" : "Saved");
-    setTimeout(() => setToast(""), 1500);
+    showToast(nextSaved ? "Saved" : "Removed");
 
     try {
       if (nextSaved) {
@@ -176,6 +196,7 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
     } catch (error) {
       console.error("Save failed:", error);
       setSaved(!nextSaved);
+      showToast("Save failed");
     }
   };
 
@@ -203,6 +224,7 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
     try {
       const url = `${window.location.origin}/home?post=${post._id}`;
       await navigator.clipboard.writeText(url);
+      showToast("Link copied");
     } catch (error) {
       console.error("Copy link failed:", error);
     } finally {
@@ -243,6 +265,7 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
   const handleReport = async () => {
     try {
       await api.post(`/user-posts/${post._id}/report`);
+      showToast("Reported");
     } catch (error) {
       console.error("Report failed:", error);
     } finally {
@@ -398,7 +421,9 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
 
           <button
             type="button"
-            className={`icon-btn feed-save-btn ${saved ? "icon-btn--saved" : ""}`}
+            className={`icon-btn feed-save-btn ${
+              saved ? "icon-btn--saved" : ""
+            }`}
             onClick={handleSave}
           >
             <FiBookmark />
@@ -407,8 +432,19 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
 
         <div className="feed-card__body">
           <p className="feed-card__caption">
-            <span>{username}</span> {post.caption || ""}
-          </p>
+  <span className="feed-card__caption-username">{username}</span>{" "}
+  {expandedCaption ? fullCaption : shortCaption}
+
+  {!expandedCaption && hasLongCaption && (
+    <button
+      type="button"
+      className="feed-card__more-btn"
+      onClick={() => setExpandedCaption(true)}
+    >
+      more...
+    </button>
+  )}
+</p>
 
           <div className="comment-box feed-card__comment-box">
             <input
@@ -425,12 +461,16 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
         </div>
       </article>
 
+      {toast && <div className="save-toast">{toast}</div>}
+
       <ShareToFollowingModal
         open={showShareModal}
         onClose={() => setShowShareModal(false)}
         title="Share post"
         shareText={post.caption || "Check this post"}
-        shareUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/home?post=${post._id}`}
+        shareUrl={`${
+          typeof window !== "undefined" ? window.location.origin : ""
+        }/home?post=${post._id}`}
       />
 
       {showUnfollowModal && (
