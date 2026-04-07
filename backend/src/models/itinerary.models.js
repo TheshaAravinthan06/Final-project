@@ -2,17 +2,86 @@ import mongoose from "mongoose";
 
 const itinerarySchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    phoneNumber: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
+
+    adults: {
+      type: Number,
+      default: 1,
+      min: 0,
+    },
+
+    children: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    accommodationType: {
+      type: String,
+      enum: ["Hotel or Rooms", "Rented House", "Hostel or Dorm", "Camping"],
+      default: "",
+    },
+
+    foodType: {
+      type: String,
+      enum: ["Veg", "Non-Veg"],
+      default: "",
+    },
+
+    allergies: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    budgetPreference: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    preferredTransport: {
+      type: String,
+      enum: ["Car", "Van", "Bus"],
+      default: "",
+    },
+
     mood: {
       type: String,
       required: true,
       trim: true,
     },
+
     selectedPlaces: [
       {
         type: String,
         trim: true,
       },
     ],
+
     selectedActivities: [
       {
         place: {
@@ -27,46 +96,71 @@ const itinerarySchema = new mongoose.Schema(
         ],
       },
     ],
+
     days: {
       type: Number,
       required: true,
+      min: 1,
     },
+
     specificDate: {
       type: String,
       default: "",
       trim: true,
     },
+
     peopleCount: {
       type: Number,
       required: true,
+      min: 1,
     },
+
     travelCompanions: [
       {
         type: String,
         trim: true,
       },
     ],
+
     customCompanionNote: {
       type: String,
       default: "",
       trim: true,
     },
+
     extraNotes: {
       type: String,
       default: "",
       trim: true,
     },
+
     itineraryText: {
       type: String,
       required: true,
+      trim: true,
     },
+
     status: {
       type: String,
       enum: ["saved", "sent_to_admin"],
       default: "saved",
     },
+
+    adminStatus: {
+      type: String,
+      enum: ["pending", "in_review", "approved", "rejected", "completed"],
+      default: "pending",
+    },
+
+    adminNote: {
+      type: String,
+      default: "",
+      trim: true,
+    },
   },
   { timestamps: true }
 );
 
-export default mongoose.model("Itinerary", itinerarySchema);
+const Itinerary = mongoose.model("Itinerary", itinerarySchema);
+
+export default Itinerary;

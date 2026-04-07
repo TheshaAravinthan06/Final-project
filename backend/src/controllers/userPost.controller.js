@@ -93,7 +93,7 @@ export const createUserPost = async (req, res) => {
     });
 
     const createdPost = await UserPost.findById(post._id)
-      .populate("createdBy", "username name profileImage")
+      .populate("createdBy", "username name")
       .populate("comments.user", "username profileImage");
 
     return res.status(201).json({
@@ -111,7 +111,7 @@ export const getAllUserPosts = async (req, res) => {
     const userId = getOptionalUserId(req);
 
     const posts = await UserPost.find({ isPublished: { $ne: false } })
-      .populate("createdBy", "username name profileImage")
+      .populate("createdBy", "username name")
       .populate("comments.user", "username profileImage")
       .sort({ createdAt: -1 });
 
@@ -135,7 +135,7 @@ export const getUserPostById = async (req, res) => {
     }
 
     const post = await UserPost.findById(id)
-      .populate("createdBy", "username name profileImage")
+      .populate("createdBy", "username name")
       .populate("comments.user", "username profileImage");
 
     if (!post) {
@@ -172,7 +172,7 @@ export const getPostsByUserId = async (req, res) => {
         : { createdBy: userId, isPublished: { $ne: false } };
 
     const posts = await UserPost.find(query)
-      .populate("createdBy", "username name profileImage")
+      .populate("createdBy", "username name")
       .populate("comments.user", "username profileImage")
       .sort({ createdAt: -1 });
 
@@ -214,7 +214,7 @@ export const updateUserPost = async (req, res) => {
     await post.save();
 
     const updatedPost = await UserPost.findById(post._id)
-      .populate("createdBy", "username name profileImage")
+      .populate("createdBy", "username name")
       .populate("comments.user", "username profileImage");
 
     return res.status(200).json({
@@ -249,7 +249,7 @@ export const toggleUserPostVisibility = async (req, res) => {
     await post.save();
 
     const updatedPost = await UserPost.findById(post._id)
-      .populate("createdBy", "username name profileImage")
+      .populate("createdBy", "username name")
       .populate("comments.user", "username profileImage");
 
     return res.status(200).json({
@@ -301,7 +301,7 @@ export const likeUserPost = async (req, res) => {
     }
 
     const post = await UserPost.findById(id)
-      .populate("createdBy", "username name profileImage")
+      .populate("createdBy", "username name")
       .populate("comments.user", "username profileImage");
 
     if (!post || post.isPublished === false) {
@@ -351,7 +351,7 @@ export const unlikeUserPost = async (req, res) => {
     }
 
     const post = await UserPost.findById(id)
-      .populate("createdBy", "username name profileImage")
+      .populate("createdBy", "username name")
       .populate("comments.user", "username profileImage");
 
     if (!post || post.isPublished === false) {
@@ -391,7 +391,7 @@ export const saveUserPost = async (req, res) => {
     }
 
     const post = await UserPost.findById(id)
-      .populate("createdBy", "username name profileImage")
+      .populate("createdBy", "username name")
       .populate("comments.user", "username profileImage");
 
     if (!post || post.isPublished === false) {
@@ -428,7 +428,7 @@ export const unsaveUserPost = async (req, res) => {
     }
 
     const post = await UserPost.findById(id)
-      .populate("createdBy", "username name profileImage")
+      .populate("createdBy", "username name")
       .populate("comments.user", "username profileImage");
 
     if (!post || post.isPublished === false) {
@@ -506,7 +506,7 @@ export const addCommentToUserPost = async (req, res) => {
     }
 
     const updatedPost = await UserPost.findById(id)
-      .populate("createdBy", "username name profileImage")
+      .populate("createdBy", "username name")
       .populate("comments.user", "username profileImage");
 
     return res.status(201).json({
@@ -550,7 +550,7 @@ export const deleteCommentFromUserPost = async (req, res) => {
     await post.save();
 
     const updatedPost = await UserPost.findById(id)
-      .populate("createdBy", "username name profileImage")
+      .populate("createdBy", "username name ")
       .populate("comments.user", "username profileImage");
 
     return res.status(200).json({

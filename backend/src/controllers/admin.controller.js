@@ -10,6 +10,7 @@ import Itinerary from "../models/itinerary.models.js";
 import ProblemReport from "../models/problemReport.models.js";
 
 
+
 // =============================
 // DASHBOARD
 // =============================
@@ -363,5 +364,91 @@ export const adminToggleTravelPickVisibility = async (req, res) => {
     res.status(200).json({ pick });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const getAdminItineraries = async (req, res) => {
+  try {
+    const itineraries = await Itinerary.find({ status: "sent_to_admin" })
+      .populate("user", "username email profileImage")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({ itineraries });
+  } catch (error) {
+    console.error("getAdminItineraries error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch itineraries",
+      error: error.message,
+    });
+  }
+};
+
+export const getAdminItineraryById = async (req, res) => {
+  try {
+    const itinerary = await Itinerary.findById(req.params.id).populate(
+      "user",
+      "username email profileImage"
+    );
+
+    if (!itinerary) {
+      return res.status(404).json({ message: "Itinerary not found" });
+    }
+
+    return res.status(200).json({ itinerary });
+  } catch (error) {
+    console.error("getAdminItineraryById error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch itinerary",
+      error: error.message,
+    });
+  }
+};
+
+export const updateAdminItinerary = async (req, res) => {
+  try {
+    const { adminStatus, adminNote } = req.body;
+
+    const allowedStatuses = [
+      "pending",
+      "in_review",
+      "approved",
+      "rejected",
+      "completed",
+    ];
+
+    if (adminStatus && !allowedStatuses.includes(adminStatus)) {
+      return res.status(400).json({
+        message: "Invalid admin status",
+      });
+    }
+
+    const itinerary = await Itinerary.findById(req.params.id);
+
+    if (!itinerary) {
+      return res.status(404).json({
+        message: "Itinerary not found",
+      });
+    }
+
+    if (adminStatus) itinerary.adminStatus = adminStatus;
+    if (typeof adminNote === "string") itinerary.adminNote = adminNote.trim();
+
+    await itinerary.save();
+
+    const updatedItinerary = await Itinerary.findById(itinerary._id).populate(
+      "user",
+      "username email profileImage"
+    );
+
+    return res.status(200).json({
+      message: "Itinerary updated successfully",
+      itinerary: updatedItinerary,
+    });
+  } catch (error) {
+    console.error("updateAdminItinerary error:", error);
+    return res.status(500).json({
+      message: "Failed to update itinerary",
+      error: error.message,
+    });
   }
 };

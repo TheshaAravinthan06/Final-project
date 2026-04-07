@@ -78,5 +78,5 @@ app.use("/search", searchRoutes);
 app.use("/blogs", blogRoutes);
 app.use("/conversations", conversationRoutes);
 app.use("/ai", aiRoutes);
-app.use("/api/booking-itineraries", bookingItineraryRoutes);
+app.use("/booking-itineraries", bookingItineraryRoutes);
 export default app;

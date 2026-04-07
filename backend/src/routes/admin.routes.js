@@ -12,6 +12,9 @@ import {
   adminTogglePlaceVisibility,
   adminToggleTravelPickVisibility,
   adminBlockUser,
+   getAdminItineraries,
+  getAdminItineraryById,
+  updateAdminItinerary,
 } from "../controllers/admin.controller.js";
 import { adminGlobalSearch } from "../controllers/search.controller.js";
 
@@ -34,5 +37,9 @@ router.get("/reports", adminGetReports);
 
 router.patch("/places/:id/visibility", adminTogglePlaceVisibility);
 router.patch("/travel-picks/:id/visibility", adminToggleTravelPickVisibility);
+
+router.get("/itineraries", protect, authorize("admin"), getAdminItineraries);
+router.get("/itineraries/:id", protect, authorize("admin"), getAdminItineraryById);
+router.patch("/itineraries/:id", protect, authorize("admin"), updateAdminItinerary);
 
 export default router;

@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import "@/styles/ai-page.scss";
 import FloatingAIChat from "@/components/ai/FloatingAIChat";
@@ -6,9 +7,9 @@ import { FiCompass, FiBookmark, FiSend, FiMapPin } from "react-icons/fi";
 import SavedItineraries from "@/components/ai/SavedItineraries";
 import SentToAdminList from "@/components/ai/SentToAdminList";
 
-
 export default function AIPlannerPage() {
   const [activeTab, setActiveTab] = useState("new");
+
   return (
     <div className="ai-page">
       <div className="ai-page__shell">
@@ -44,14 +45,14 @@ export default function AIPlannerPage() {
               <span>Saved Itineraries</span>
             </button>
 
-           <button
-  type="button"
-  className={activeTab === "sent" ? "active" : ""}
-  onClick={() => setActiveTab("sent")}
->
-  <FiSend />
-  <span>Send to Admin</span>
-</button>
+            <button
+              type="button"
+              className={activeTab === "sent" ? "active" : ""}
+              onClick={() => setActiveTab("sent")}
+            >
+              <FiSend />
+              <span>Send to Admin</span>
+            </button>
 
             <button type="button">
               <FiMapPin />
@@ -78,22 +79,16 @@ export default function AIPlannerPage() {
               Share
             </button>
           </div>
-<div className="ai-page__chat-stream">
-  {activeTab === "new" && (
-    <FloatingAIChat isOpen={true} onClose={() => {}} fullPage />
-  )}
 
-  {activeTab === "saved" && (
-    <SavedItineraries />
-  )}
-  {activeTab === "new" && (
-  <FloatingAIChat isOpen={true} onClose={() => {}} fullPage />
-)}
+          <div className="ai-page__chat-stream">
+            {activeTab === "new" && (
+              <FloatingAIChat isOpen={true} onClose={() => {}} fullPage />
+            )}
 
-{activeTab === "saved" && <SavedItineraries />}
+            {activeTab === "saved" && <SavedItineraries />}
 
-{activeTab === "sent" && <SentToAdminList />}
-</div>
+            {activeTab === "sent" && <SentToAdminList />}
+          </div>
         </section>
       </div>
     </div>
