@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/axios";
 import ShareToFollowingModal from "@/components/common/ShareToFollowingModal";
 import CommentsModal from "@/components/common/CommentsModal";
+import ReportContentModal from "@/components/home/ReportContentModal";
 import {
   FiHeart,
   FiMessageCircle,
@@ -110,6 +111,7 @@ export default function FeedPostCard({ post }: Props) {
   );
   const [showMenu, setShowMenu] = useState(false);
   const [showUnfollowModal, setShowUnfollowModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const menuRef = useRef<HTMLDivElement | null>(null);
   const commentInputRef = useRef<HTMLInputElement | null>(null);
@@ -272,6 +274,19 @@ export default function FeedPostCard({ post }: Props) {
     setShowShareModal(true);
   };
 
+  const handleBlock = async () => {
+  if (!authorId) return;
+
+  try {
+    await api.post(`/users/${authorId}/block`);
+    setShowMenu(false);
+    window.location.reload();
+  } catch (error) {
+    console.error("Block failed:", error);
+    showToast("Block failed");
+  }
+};
+
   const handleCopyLink = async () => {
     try {
       const url = `${window.location.origin}/home?post=${postState._id}`;
@@ -401,7 +416,13 @@ export default function FeedPostCard({ post }: Props) {
                   </>
                 ) : (
                   <>
-                    <button type="button" onClick={handleReport}>
+                   <button
+  type="button"
+  onClick={() => {
+    setShowMenu(false);
+    setShowReportModal(true);
+  }}
+>
                       <FiAlertTriangle />
                       Report
                     </button>
@@ -418,6 +439,12 @@ export default function FeedPostCard({ post }: Props) {
                         Unfollow
                       </button>
                     )}
+
+
+  <button type="button" onClick={handleBlock}>
+    <FiUserMinus />
+    Block account
+  </button>
 
                     <button type="button" onClick={handleCopyLink}>
                       <FiCopy />
@@ -514,6 +541,24 @@ export default function FeedPostCard({ post }: Props) {
       </article>
 
       {toast && <div className="save-toast">{toast}</div>}
+
+      <ReportContentModal
+  open={showReportModal}
+  onClose={() => setShowReportModal(false)}
+  onSubmit={async ({ target, reason, details }) => {
+    try {
+      if (target === "account" || target === "activity") {
+        await api.post(`/users/${authorId}/report`, { reason, details });
+      } else {
+        await api.post(`/user-posts/${postState._id}/report`, { reason, details });
+      }
+      showToast("Report sent to admin");
+    } catch (error) {
+      showToast("Report failed");
+    }
+  }}
+  title="Report this post"
+/>
 
       <ShareToFollowingModal
         open={showShareModal}

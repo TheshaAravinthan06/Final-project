@@ -9,7 +9,7 @@ type ActivityGroup = {
   activities: string[];
 };
 
-type ItineraryType = {
+type BookingItinerary = {
   _id: string;
   name: string;
   phoneNumber: string;
@@ -22,6 +22,7 @@ type ItineraryType = {
   budgetPreference: string;
   preferredTransport: string;
 
+  itineraryText: string;
   mood: string;
   selectedPlaces: string[];
   selectedActivities: ActivityGroup[];
@@ -31,10 +32,8 @@ type ItineraryType = {
   travelCompanions: string[];
   customCompanionNote: string;
   extraNotes: string;
-  itineraryText: string;
 
-  status: "saved" | "sent_to_admin";
-  adminStatus: "pending" | "in_review" | "approved" | "rejected" | "completed";
+  status: "pending" | "in_review" | "approved" | "rejected" | "completed";
   adminNote: string;
   createdAt: string;
 
@@ -46,42 +45,66 @@ type ItineraryType = {
   } | null;
 };
 
-const statuses = ["pending", "in_review", "approved", "rejected", "completed"] as const;
+const statusOptions = [
+  "pending",
+  "in_review",
+  "approved",
+  "rejected",
+  "completed",
+] as const;
+
+const accommodationLabel: Record<string, string> = {
+  hotel_or_rooms: "Hotel / Rooms",
+  rented_house: "Rented House",
+  hostel_or_dorm: "Hostel / Dorm",
+  camping: "Camping",
+};
+
+const foodLabel: Record<string, string> = {
+  veg: "Veg",
+  non_veg: "Non-Veg",
+};
+
+const transportLabel: Record<string, string> = {
+  car: "Car",
+  van: "Van",
+  bus: "Bus",
+};
 
 export default function AdminItinerariesPage() {
-  const [items, setItems] = useState<ItineraryType[]>([]);
+  const [items, setItems] = useState<BookingItinerary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<ItineraryType | null>(null);
+  const [selected, setSelected] = useState<BookingItinerary | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [adminStatus, setAdminStatus] =
-    useState<ItineraryType["adminStatus"]>("pending");
+    useState<BookingItinerary["status"]>("pending");
   const [adminNote, setAdminNote] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const fetchItineraries = async () => {
+  const fetchItems = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/admin/itineraries");
-      setItems(res.data?.itineraries || []);
+      const res = await api.get("/booking-itineraries/admin");
+      setItems(res.data?.bookings || []);
     } catch (error: any) {
-      console.error("Failed to fetch itineraries:", error?.response?.data || error);
+      console.error("Failed to fetch admin itineraries:", error?.response?.data || error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchItineraries();
+    fetchItems();
   }, []);
 
   const filteredItems = useMemo(() => {
     if (statusFilter === "all") return items;
-    return items.filter((item) => item.adminStatus === statusFilter);
+    return items.filter((item) => item.status === statusFilter);
   }, [items, statusFilter]);
 
-  const openModal = (item: ItineraryType) => {
+  const openModal = (item: BookingItinerary) => {
     setSelected(item);
-    setAdminStatus(item.adminStatus);
+    setAdminStatus(item.status);
     setAdminNote(item.adminNote || "");
   };
 
@@ -92,17 +115,17 @@ export default function AdminItinerariesPage() {
   };
 
   const saveUpdate = async () => {
-    if (!selected) return;
+    if (!selected?._id) return;
 
     try {
       setSaving(true);
 
-      const res = await api.patch(`/admin/itineraries/${selected._id}`, {
-        adminStatus,
+      const res = await api.patch(`/booking-itineraries/${selected._id}/status`, {
+        status: adminStatus,
         adminNote,
       });
 
-      const updated = res.data?.itinerary;
+      const updated = res.data?.booking;
 
       setItems((prev) =>
         prev.map((item) => (item._id === updated._id ? updated : item))
@@ -111,6 +134,9 @@ export default function AdminItinerariesPage() {
       setSelected(updated);
     } catch (error: any) {
       console.error("Failed to update itinerary:", error?.response?.data || error);
+      alert(
+        error?.response?.data?.message || "Failed to update itinerary."
+      );
     } finally {
       setSaving(false);
     }
@@ -120,8 +146,8 @@ export default function AdminItinerariesPage() {
     <div className="admin-itineraries-page">
       <div className="admin-itineraries-header">
         <div>
-          <h1>Admin Itineraries</h1>
-          <p>View all itinerary requests sent by users.</p>
+          <h1>Itinerary Requests</h1>
+          <p>View user itinerary requests and update status.</p>
         </div>
 
         <div className="admin-itineraries-filter">
@@ -131,17 +157,17 @@ export default function AdminItinerariesPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
           >
             <option value="all">All</option>
-            <option value="pending">Pending</option>
-            <option value="in_review">In Review</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-            <option value="completed">Completed</option>
+            {statusOptions.map((status) => (
+              <option key={status} value={status}>
+                {status.replace("_", " ")}
+              </option>
+            ))}
           </select>
         </div>
       </div>
 
       {loading ? (
-        <div className="admin-itineraries-empty">Loading itineraries...</div>
+        <div className="admin-itineraries-empty">Loading itinerary requests...</div>
       ) : filteredItems.length === 0 ? (
         <div className="admin-itineraries-empty">No itinerary requests found.</div>
       ) : (
@@ -159,8 +185,8 @@ export default function AdminItinerariesPage() {
                   <p>{item.phoneNumber}</p>
                 </div>
 
-                <span className={`admin-status-badge ${item.adminStatus}`}>
-                  {item.adminStatus.replace("_", " ")}
+                <span className={`admin-status-badge ${item.status}`}>
+                  {item.status.replace("_", " ")}
                 </span>
               </div>
 
@@ -194,7 +220,9 @@ export default function AdminItinerariesPage() {
             <div className="admin-itinerary-modal__header">
               <div>
                 <h2>Itinerary Request</h2>
-                <p>{selected.name} • {selected.email}</p>
+                <p>
+                  {selected.name} • {selected.email}
+                </p>
               </div>
 
               <button onClick={closeModal}>✕</button>
@@ -216,11 +244,11 @@ export default function AdminItinerariesPage() {
                 <div className="admin-itinerary-info-grid">
                   <span><strong>Adults:</strong> {selected.adults}</span>
                   <span><strong>Children:</strong> {selected.children}</span>
-                  <span><strong>Accommodation:</strong> {selected.accommodationType || "Not specified"}</span>
-                  <span><strong>Food Type:</strong> {selected.foodType || "Not specified"}</span>
+                  <span><strong>Accommodation:</strong> {accommodationLabel[selected.accommodationType] || "Not specified"}</span>
+                  <span><strong>Food Type:</strong> {foodLabel[selected.foodType] || "Not specified"}</span>
                   <span><strong>Allergies:</strong> {selected.allergies || "None"}</span>
                   <span><strong>Budget:</strong> {selected.budgetPreference || "Not specified"}</span>
-                  <span><strong>Transport:</strong> {selected.preferredTransport || "Not specified"}</span>
+                  <span><strong>Transport:</strong> {transportLabel[selected.preferredTransport] || "Not specified"}</span>
                 </div>
               </section>
 
@@ -280,10 +308,10 @@ export default function AdminItinerariesPage() {
                     <select
                       value={adminStatus}
                       onChange={(e) =>
-                        setAdminStatus(e.target.value as ItineraryType["adminStatus"])
+                        setAdminStatus(e.target.value as BookingItinerary["status"])
                       }
                     >
-                      {statuses.map((status) => (
+                      {statusOptions.map((status) => (
                         <option key={status} value={status}>
                           {status.replace("_", " ")}
                         </option>

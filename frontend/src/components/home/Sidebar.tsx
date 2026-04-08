@@ -434,6 +434,9 @@ export default function Sidebar({
       <ReportProblemModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
+        onSubmit={async ({ subject, message }) => {
+          await api.post("/users/report-problem", { subject, message });
+        }}
       />
     </>
   );

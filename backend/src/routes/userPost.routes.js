@@ -14,6 +14,7 @@ import {
   unsaveUserPost,
   addCommentToUserPost,
   deleteCommentFromUserPost,
+  reportUserPost,
 } from "../controllers/userPost.controller.js";
 
 const router = express.Router();
@@ -33,6 +34,7 @@ router.post("/:id/save", protect, saveUserPost);
 router.post("/:id/unsave", protect, unsaveUserPost);
 
 router.post("/:id/comment", protect, addCommentToUserPost);
+router.post("/:id/report", protect, reportUserPost);
 router.delete("/:postId/comment/:commentId", protect, deleteCommentFromUserPost);
 
 // router.get("/:id", protect, getUserPostById);

@@ -8,6 +8,7 @@ import Payment from "../models/payment.models.js";
 import TravelPick from "../models/travelPick.models.js";
 import Itinerary from "../models/itinerary.models.js";
 import ProblemReport from "../models/problemReport.models.js";
+import ContentReport from "../models/contentReport.models.js";
 
 
 
@@ -317,17 +318,57 @@ export const adminMarkNotificationRead = async (req, res) => {
 // =============================
 export const adminGetReports = async (req, res) => {
   try {
-    const placeReports = await PlaceReport.find()
-      .populate("place", "placeName")
-      .populate("reportedBy", "username");
+    const [placeReports, problemReports, contentReports] = await Promise.all([
+      PlaceReport.find()
+        .populate("place", "placeName isPublished")
+        .populate("reportedBy", "username email"),
+      ProblemReport.find().populate("reportedBy", "username email"),
+      ContentReport.find()
+        .populate("reportedBy", "username email")
+        .populate("targetUser", "username email"),
+    ]);
 
-    const problemReports = await ProblemReport.find()
-      .populate("reportedBy", "username");
+    const reports = [
+      ...placeReports.map((report) => ({
+        _id: report._id,
+        reportKind: "place",
+        reportType: "place",
+        reason: report.reason || "",
+        details: "",
+        status: report.status,
+        createdAt: report.createdAt,
+        place: report.place || null,
+        reportedBy: report.reportedBy || null,
+        targetUser: null,
+      })),
+      ...problemReports.map((report) => ({
+        _id: report._id,
+        reportKind: "problem",
+        reportType: "problem",
+        subject: report.subject || "",
+        message: report.message || "",
+        status: report.status,
+        createdAt: report.createdAt,
+        reportedBy: report.reportedBy || null,
+        place: null,
+        targetUser: null,
+      })),
+      ...contentReports.map((report) => ({
+        _id: report._id,
+        reportKind: "content",
+        reportType: report.reportType,
+        reason: report.reason || "",
+        details: report.details || "",
+        status: report.status,
+        createdAt: report.createdAt,
+        reportedBy: report.reportedBy || null,
+        targetUser: report.targetUser || null,
+        place: null,
+        entityId: report.entityId,
+      })),
+    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-    res.status(200).json({
-      placeReports,
-      problemReports,
-    });
+    res.status(200).json({ reports });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

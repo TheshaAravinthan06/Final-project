@@ -167,7 +167,7 @@ export default function ExplorePlacesCard({ place, onPlaceUpdated }: Props) {
 
             <div>
               <h4>{place.placeName}</h4>
-              <p>by {place.createdBy?.username || "admin"} · Explore Places</p>
+              {/* <p>by {place.createdBy?.username || "admin"} · Explore Places</p> */}
             </div>
           </div>
 

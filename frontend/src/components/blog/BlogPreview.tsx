@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import ShareToFollowingModal from "@/components/common/ShareToFollowingModal";
+import ReportContentModal from "../home/ReportContentModal";
 import {
   FiHeart,
   FiMessageCircle,
@@ -87,6 +88,7 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
   const [commentText, setCommentText] = useState("");
   const [toast, setToast] = useState("");
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const [currentUserId, setCurrentUserId] = useState("");
   const [followLoading, setFollowLoading] = useState(false);
@@ -273,12 +275,30 @@ const hasLongCaption = previewText.length > captionLimit;
     }
   };
 
-  const handleReport = async () => {
+  const handleReport = async ({
+    target,
+    reason,
+    details,
+  }: {
+    target: "post" | "blog" | "account" | "activity";
+    reason: string;
+    details: string;
+  }) => {
     try {
-      await api.post(`/blogs/${blog._id}/report`);
-      showToast("Reported");
+      if (target === "account" || target === "activity") {
+        await api.post(`/users/${authorId}/report`, {
+          reason,
+          details: target === "activity" ? `Activity report: ${details}`.trim() : details,
+        });
+      } else {
+        await api.post(`/blogs/${blog._id}/report`, { reason, details });
+      }
+
+      showToast("Report sent to admin");
     } catch (error) {
       console.error("Report failed:", error);
+      showToast("Report failed");
+      throw error;
     } finally {
       setShowMenu(false);
     }
@@ -372,7 +392,13 @@ const hasLongCaption = previewText.length > captionLimit;
                   </>
                 ) : (
                   <>
-                    <button type="button" onClick={handleReport}>
+                    <button
+  type="button"
+  onClick={() => {
+    setShowMenu(false);
+    setShowReportModal(true);
+  }}
+>
                       <FiAlertTriangle />
                       Report
                     </button>
@@ -452,13 +478,13 @@ const hasLongCaption = previewText.length > captionLimit;
           </div>
 
           <div className="feed-action-stat">
-            <button
-              type="button"
-              className="icon-btn"
-              onClick={() => commentInputRef.current?.focus()}
-            >
-              <FiMessageCircle />
-            </button>
+          <button
+  type="button"
+  className="icon-btn"
+  onClick={() => router.push(`/blogs/${blog._id}#comments`)}
+>
+  <FiMessageCircle />
+</button>
             <span className="feed-action-stat__count">{commentsCount}</span>
           </div>
 
@@ -512,6 +538,13 @@ const hasLongCaption = previewText.length > captionLimit;
       </article>
 
       {toast && <div className="save-toast">{toast}</div>}
+
+      <ReportContentModal
+        open={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        onSubmit={handleReport}
+        title="Report this content"
+      />
 
       <ShareToFollowingModal
         open={showShareModal}

@@ -1,0 +1,221 @@
+// saved itineraries of user side
+
+.saved-itineraries {
+  margin-top: 24px;
+
+  h2 {
+    margin: 0 0 16px;
+    font-size: 24px;
+    color: #18392e;
+  }
+
+  &.empty p {
+    color: #6b7b74;
+    font-size: 14px;
+  }
+}
+
+.saved-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.saved-card {
+  background: #ffffff;
+  border: 1px solid #e4ede8;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 10px 24px rgba(22, 50, 41, 0.05);
+
+  p {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: #556760;
+    line-height: 1.6;
+  }
+}
+
+.saved-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #17382d;
+  }
+
+  span {
+    font-size: 12px;
+    color: #7d8c85;
+    white-space: nowrap;
+  }
+}
+
+.saved-preview {
+  margin-top: 12px !important;
+  color: #61736b;
+}
+
+.saved-itinerary-card__actions,
+.saved-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+
+  button {
+    height: 42px;
+    border: none;
+    border-radius: 12px;
+    padding: 0 14px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .view-btn {
+    background: #eef4f1;
+    color: #24463a;
+  }
+
+  .delete-btn {
+    background: #fdecec;
+    color: #b42318;
+  }
+
+  .send-btn {
+    background: #1f7a5a;
+    color: #fff;
+  }
+
+  button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.saved-itinerary-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.48);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  z-index: 3000;
+}
+
+.saved-itinerary-modal {
+  position: relative;
+  width: min(760px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+  padding: 24px;
+
+  h2 {
+    margin: 0 0 14px;
+    font-size: 24px;
+    color: #17382d;
+  }
+}
+
+.saved-itinerary-modal__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 12px;
+  background: #f1f5f3;
+  color: #29443b;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.saved-itinerary-modal__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+
+  span {
+    background: #f7fbf8;
+    border: 1px solid #e6efea;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #365347;
+  }
+}
+
+.saved-itinerary-modal__content {
+  background: #f8fbf9;
+  border: 1px solid #e6efea;
+  border-radius: 18px;
+  padding: 16px;
+  color: #4d5f57;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.saved-itinerary-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+
+  button {
+    height: 42px;
+    border: none;
+    border-radius: 12px;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .delete-btn {
+    background: #fdecec;
+    color: #b42318;
+  }
+
+  .send-btn {
+    background: #1f7a5a;
+    color: #fff;
+  }
+}
+
+@media (max-width: 1100px) {
+  .saved-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .saved-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .saved-itinerary-modal {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .saved-itinerary-modal__actions,
+  .saved-card__actions {
+    flex-direction: column;
+
+    button {
+      width: 100%;
+    }
+  }
+}

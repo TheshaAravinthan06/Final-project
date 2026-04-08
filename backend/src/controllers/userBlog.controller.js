@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import UserBlog from "../models/userBlog.models.js";
+import User from "../models/user.models.js";
+import ContentReport from "../models/contentReport.models.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -101,15 +103,25 @@ export const createBlog = async (req, res) => {
 export const getAllBlogs = async (req, res) => {
   try {
     const userId = getOptionalUserId(req);
+    let blockedUserIds = [];
+
+    if (userId) {
+      const currentUser = await User.findById(userId).select("blockedUsers");
+      blockedUserIds = (currentUser?.blockedUsers || []).map((id) => String(id));
+    }
 
     const blogs = await UserBlog.find({ isPublished: { $ne: false } })
       .populate("author", "username name profileImage")
       .populate("comments.user", "username name profileImage")
       .sort({ createdAt: -1 });
 
+    const visibleBlogs = blogs.filter(
+      (blog) => !blockedUserIds.includes(String(blog.author?._id || blog.author))
+    );
+
     res.status(200).json({
-      count: blogs.length,
-      blogs: blogs.map((blog) => formatBlog(blog, userId)),
+      count: visibleBlogs.length,
+      blogs: visibleBlogs.map((blog) => formatBlog(blog, userId)),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -234,13 +246,38 @@ export const toggleBlogVisibility = async (req, res) => {
 
 export const reportBlog = async (req, res) => {
   try {
-    const blog = await UserBlog.findById(req.params.id);
+    const { reason = "", details = "" } = req.body || {};
+    const blog = await UserBlog.findById(req.params.id).populate("author", "username");
 
-    if (!blog) {
+    if (!blog || blog.isPublished === false) {
       return res.status(404).json({ message: "Blog not found" });
     }
 
-    res.status(200).json({ message: "Blog reported successfully" });
+    if (String(blog.author?._id || blog.author) === String(req.user._id)) {
+      return res.status(400).json({ message: "You cannot report your own blog" });
+    }
+
+    const report = await ContentReport.findOneAndUpdate(
+      {
+        reportType: "blog",
+        entityId: blog._id,
+        reportedBy: req.user._id,
+      },
+      {
+        $set: {
+          targetUser: blog.author?._id || blog.author,
+          reason: String(reason || "").trim(),
+          details: String(details || "").trim(),
+          status: "pending",
+        },
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    res.status(200).json({
+      message: "Blog reported successfully",
+      report,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

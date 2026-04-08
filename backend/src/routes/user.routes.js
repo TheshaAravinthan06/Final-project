@@ -14,6 +14,7 @@ import {
   getReviewsOfUser,
   deleteMyReview,
   createProblemReport,
+  reportUserAccount,
   getBlockedAccounts,
   blockUser,
   unblockUser,
@@ -29,6 +30,7 @@ router.get("/me/blocked-accounts", protect, getBlockedAccounts);
 router.get("/me/saved-collections", protect, getMySavedCollections);
 
 router.post("/report-problem", protect, createProblemReport);
+router.post("/:id/report", protect, reportUserAccount);
 
 router.post(
   "/me/avatar",

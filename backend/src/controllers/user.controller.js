@@ -8,6 +8,7 @@ import fs from "fs";
 import Review from "../models/review.models.js";
 import { createUserNotification } from "../utils/createUserNotification.js";
 import ProblemReport from "../models/problemReport.models.js";
+import ContentReport from "../models/contentReport.models.js";
 import bcrypt from "bcryptjs";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
@@ -749,6 +750,52 @@ export const deleteMyReview = async (req, res) => {
 
     return res.status(200).json({
       message: "Review deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+
+export const reportUserAccount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason = "", details = "" } = req.body || {};
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+
+    if (String(req.user._id) === String(id)) {
+      return res.status(400).json({ message: "You cannot report yourself" });
+    }
+
+    const targetUser = await User.findById(id);
+
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const report = await ContentReport.findOneAndUpdate(
+      {
+        reportType: "user_account",
+        entityId: targetUser._id,
+        reportedBy: req.user._id,
+      },
+      {
+        $set: {
+          targetUser: targetUser._id,
+          reason: String(reason || "").trim(),
+          details: String(details || "").trim(),
+          status: "pending",
+        },
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    return res.status(201).json({
+      message: "Account reported successfully",
+      report,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });

@@ -18,10 +18,30 @@ type SentBooking = {
   children: number;
   accommodationType: string;
   foodType: string;
+  allergies: string;
   budgetPreference: string;
   preferredTransport: string;
-  status: "pending" | "reviewed" | "approved" | "rejected";
+  status: "pending" | "in_review" | "approved" | "rejected" | "completed";
+  adminNote: string;
   createdAt: string;
+};
+
+const accommodationLabel: Record<string, string> = {
+  hotel_or_rooms: "Hotel / Rooms",
+  rented_house: "Rented House",
+  hostel_or_dorm: "Hostel / Dorm",
+  camping: "Camping",
+};
+
+const foodLabel: Record<string, string> = {
+  veg: "Veg",
+  non_veg: "Non-Veg",
+};
+
+const transportLabel: Record<string, string> = {
+  car: "Car",
+  van: "Van",
+  bus: "Bus",
 };
 
 export default function SentToAdminList() {
@@ -81,44 +101,30 @@ export default function SentToAdminList() {
               </div>
 
               <span className={`status-badge ${item.status}`}>
-                {item.status}
+                {item.status.replace("_", " ")}
               </span>
             </div>
 
             <div className="sent-admin-card__meta">
-              <p>
-                <strong>Email:</strong> {item.email}
-              </p>
-              <p>
-                <strong>Phone:</strong> {item.phoneNumber}
-              </p>
-              <p>
-                <strong>Places:</strong> {item.selectedPlaces.join(", ")}
-              </p>
-              <p>
-                <strong>Days:</strong> {item.days}
-              </p>
-              <p>
-                <strong>Adults:</strong> {item.adults}
-              </p>
-              <p>
-                <strong>Children:</strong> {item.children}
-              </p>
-              <p>
-                <strong>Accommodation:</strong> {item.accommodationType}
-              </p>
-              <p>
-                <strong>Food:</strong> {item.foodType}
-              </p>
-              <p>
-                <strong>Transport:</strong> {item.preferredTransport}
-              </p>
-              {item.budgetPreference && (
-                <p>
-                  <strong>Budget:</strong> {item.budgetPreference}
-                </p>
-              )}
+              <p><strong>Email:</strong> {item.email}</p>
+              <p><strong>Phone:</strong> {item.phoneNumber}</p>
+              <p><strong>Places:</strong> {item.selectedPlaces.join(", ")}</p>
+              <p><strong>Days:</strong> {item.days}</p>
+              <p><strong>Adults:</strong> {item.adults}</p>
+              <p><strong>Children:</strong> {item.children}</p>
+              <p><strong>Accommodation:</strong> {accommodationLabel[item.accommodationType] || item.accommodationType}</p>
+              <p><strong>Food:</strong> {foodLabel[item.foodType] || item.foodType}</p>
+              <p><strong>Transport:</strong> {transportLabel[item.preferredTransport] || item.preferredTransport}</p>
+              {item.allergies && <p><strong>Allergies:</strong> {item.allergies}</p>}
+              {item.budgetPreference && <p><strong>Budget:</strong> {item.budgetPreference}</p>}
             </div>
+
+            {item.adminNote && (
+              <div className="sent-admin-card__admin-note">
+                <strong>Admin Note</strong>
+                <p>{item.adminNote}</p>
+              </div>
+            )}
 
             <div className="sent-admin-card__preview">
               <strong>Itinerary Preview</strong>

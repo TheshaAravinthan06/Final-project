@@ -51,7 +51,7 @@ export default function TravelPicksPage() {
 
   return (
     <section className="travel-picks-page">
-      <div className="travel-picks-head">
+      <div className="travel-picks-page__header">
         <h1>Travel Picks</h1>
         <p>Handpicked group travel packages curated just for you.</p>
       </div>

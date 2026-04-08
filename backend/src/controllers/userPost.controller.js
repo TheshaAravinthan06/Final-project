@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import UserPost from "../models/userPost.models.js";
+import User from "../models/user.models.js";
+import ContentReport from "../models/contentReport.models.js";
 import { createUserNotification } from "../utils/createUserNotification.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
@@ -109,15 +111,25 @@ export const createUserPost = async (req, res) => {
 export const getAllUserPosts = async (req, res) => {
   try {
     const userId = getOptionalUserId(req);
+    let blockedUserIds = [];
+
+    if (userId) {
+      const currentUser = await User.findById(userId).select("blockedUsers");
+      blockedUserIds = (currentUser?.blockedUsers || []).map((id) => String(id));
+    }
 
     const posts = await UserPost.find({ isPublished: { $ne: false } })
-      .populate("createdBy", "username name")
+      .populate("createdBy", "username name profileImage")
       .populate("comments.user", "username profileImage")
       .sort({ createdAt: -1 });
 
+    const visiblePosts = posts.filter(
+      (post) => !blockedUserIds.includes(String(post.createdBy?._id || post.createdBy))
+    );
+
     return res.status(200).json({
-      count: posts.length,
-      posts: posts.map((post) => formatUserPost(post, userId)),
+      count: visiblePosts.length,
+      posts: visiblePosts.map((post) => formatUserPost(post, userId)),
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -452,6 +464,52 @@ export const unsaveUserPost = async (req, res) => {
     return res.status(200).json({
       message: "Post unsaved successfully",
       post: formatUserPost(post, req.user._id),
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+
+export const reportUserPost = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason = "", details = "" } = req.body || {};
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ message: "Invalid post id" });
+    }
+
+    const post = await UserPost.findById(id).populate("createdBy", "username");
+
+    if (!post || post.isPublished === false) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    if (String(post.createdBy?._id || post.createdBy) === String(req.user._id)) {
+      return res.status(400).json({ message: "You cannot report your own post" });
+    }
+
+    const report = await ContentReport.findOneAndUpdate(
+      {
+        reportType: "user_post",
+        entityId: post._id,
+        reportedBy: req.user._id,
+      },
+      {
+        $set: {
+          targetUser: post.createdBy?._id || post.createdBy,
+          reason: String(reason || "").trim(),
+          details: String(details || "").trim(),
+          status: "pending",
+        },
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    return res.status(200).json({
+      message: "Post reported successfully",
+      report,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });

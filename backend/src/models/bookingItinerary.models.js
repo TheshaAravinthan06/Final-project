@@ -2,45 +2,81 @@ import mongoose from "mongoose";
 
 const bookingItinerarySchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
     itineraryText: {
       type: String,
       required: true,
+      trim: true,
     },
+
     mood: {
       type: String,
       required: true,
+      trim: true,
     },
+
     selectedPlaces: [
       {
         type: String,
+        trim: true,
       },
     ],
+
     selectedActivities: [
       {
-        place: String,
-        activities: [String],
+        place: {
+          type: String,
+          trim: true,
+        },
+        activities: [
+          {
+            type: String,
+            trim: true,
+          },
+        ],
       },
     ],
+
     days: {
       type: Number,
       required: true,
+      min: 1,
     },
+
     specificDate: {
       type: String,
       default: "",
+      trim: true,
     },
+
     peopleCount: {
       type: Number,
       required: true,
+      min: 1,
     },
-    travelCompanions: [String],
+
+    travelCompanions: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+
     customCompanionNote: {
       type: String,
       default: "",
+      trim: true,
     },
+
     extraNotes: {
       type: String,
       default: "",
+      trim: true,
     },
 
     name: {
@@ -48,39 +84,41 @@ const bookingItinerarySchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+
     phoneNumber: {
       type: String,
       required: true,
       trim: true,
     },
+
     email: {
       type: String,
       required: true,
       trim: true,
+      lowercase: true,
     },
 
     adults: {
       type: Number,
       default: 1,
+      min: 0,
     },
+
     children: {
       type: Number,
       default: 0,
+      min: 0,
     },
 
     accommodationType: {
       type: String,
       enum: [
-        "hotel",
-        "private_room",
-        "shared_room",
+        "hotel_or_rooms",
         "rented_house",
-        "rest_inn",
-        "dome",
-        "hostel",
+        "hostel_or_dorm",
         "camping",
       ],
-      default: "hotel",
+      default: "hotel_or_rooms",
     },
 
     foodType: {
@@ -89,9 +127,16 @@ const bookingItinerarySchema = new mongoose.Schema(
       default: "non_veg",
     },
 
+    allergies: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
     budgetPreference: {
       type: String,
       default: "",
+      trim: true,
     },
 
     preferredTransport: {
@@ -102,8 +147,14 @@ const bookingItinerarySchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["pending", "reviewed", "approved", "rejected"],
+      enum: ["pending", "in_review", "approved", "rejected", "completed"],
       default: "pending",
+    },
+
+    adminNote: {
+      type: String,
+      default: "",
+      trim: true,
     },
   },
   { timestamps: true }

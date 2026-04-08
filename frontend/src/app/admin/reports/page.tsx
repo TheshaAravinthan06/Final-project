@@ -5,12 +5,15 @@ import api from "@/lib/axios";
 
 type ReportItem = {
   _id: string;
-  reportKind: "place" | "problem";
-  reason: string;
+  reportKind: "place" | "problem" | "content";
+  reportType: "place" | "problem" | "user_post" | "blog" | "user_account";
+  reason?: string;
+  details?: string;
   status: string;
   createdAt: string;
   subject?: string;
   message?: string;
+  entityId?: string;
   place?: {
     _id: string;
     placeName: string;
@@ -19,8 +22,40 @@ type ReportItem = {
   reportedBy?: {
     _id: string;
     username: string;
-    email: string;
+    email?: string;
   } | null;
+  targetUser?: {
+    _id: string;
+    username: string;
+    email?: string;
+  } | null;
+};
+
+const getReportTitle = (report: ReportItem) => {
+  if (report.reportKind === "problem") return report.subject || "Problem report";
+  if (report.reportKind === "place") return report.place?.placeName || "Reported place";
+  if (report.reportType === "user_post") return "Reported user post";
+  if (report.reportType === "blog") return "Reported blog";
+  return "Reported account";
+};
+
+const getReportDescription = (report: ReportItem) => {
+  if (report.reportKind === "problem") {
+    return `Sent by ${report.reportedBy?.username || "user"} • ${report.message || "No details added"}`;
+  }
+
+  if (report.reportKind === "place") {
+    return `Reported by ${report.reportedBy?.username || "user"} • ${report.reason || "No reason added"}`;
+  }
+
+  const contentTypeLabel =
+    report.reportType === "user_post"
+      ? "post"
+      : report.reportType === "blog"
+      ? "blog"
+      : "account";
+
+  return `Reported by ${report.reportedBy?.username || "user"} against ${report.targetUser?.username || "user"} • ${report.reason || `Reported ${contentTypeLabel}`}${report.details ? ` • ${report.details}` : ""}`;
 };
 
 export default function AdminReportsPage() {
@@ -65,6 +100,7 @@ export default function AdminReportsPage() {
 
   const handleBlockUser = async (userId?: string) => {
     if (!userId) return;
+
     try {
       await api.patch(`/admin/users/${userId}/block`);
     } catch (error) {
@@ -85,23 +121,8 @@ export default function AdminReportsPage() {
         {reports.map((report) => (
           <div key={report._id} className="admin-report-card">
             <div>
-              <h4>
-                {report.reportKind === "problem"
-                  ? report.subject || "Problem report"
-                  : report.place?.placeName || "Reported place"}
-              </h4>
-
-              {report.reportKind === "problem" ? (
-                <p>
-                  Sent by {report.reportedBy?.username || "user"} •{" "}
-                  {report.message || "No details added"}
-                </p>
-              ) : (
-                <p>
-                  Reported by {report.reportedBy?.username || "user"} •{" "}
-                  {report.reason || "No reason added"}
-                </p>
-              )}
+              <h4>{getReportTitle(report)}</h4>
+              <p>{getReportDescription(report)}</p>
             </div>
 
             <div className="admin-report-actions">
@@ -116,7 +137,9 @@ export default function AdminReportsPage() {
 
               <button
                 type="button"
-                onClick={() => handleBlockUser(report.reportedBy?._id)}
+                onClick={() =>
+                  handleBlockUser(report.targetUser?._id || report.reportedBy?._id)
+                }
               >
                 Block User
               </button>
