@@ -2,51 +2,56 @@
 
 import { FormEvent, useState } from "react";
 import api from "@/lib/axios";
-import "@/styles/send-itinerary-modal.scss";
 
-type Props = {
+type SelectedActivity = {
+  place: string;
+  activities: string[];
+};
+
+type SendItineraryModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess?: () => void;
+  itineraryId?: string;
   itineraryText: string;
   mood: string;
   selectedPlaces: string[];
-  selectedActivities: { place: string; activities: string[] }[];
+  selectedActivities: SelectedActivity[];
   days: number;
-  specificDate: string;
+  specificDate?: string;
   peopleCount: number;
   travelCompanions: string[];
-  customCompanionNote: string;
-  extraNotes: string;
+  customCompanionNote?: string;
+  extraNotes?: string;
 };
 
 export default function SendItineraryModal({
   isOpen,
   onClose,
   onSuccess,
+  itineraryId,
   itineraryText,
   mood,
   selectedPlaces,
   selectedActivities,
   days,
-  specificDate,
+  specificDate = "",
   peopleCount,
   travelCompanions,
-  customCompanionNote,
-  extraNotes,
-}: Props) {
-  const [loading, setLoading] = useState(false);
-
+  customCompanionNote = "",
+  extraNotes = "",
+}: SendItineraryModalProps) {
   const [name, setName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
-  const [adults, setAdults] = useState("1");
-  const [children, setChildren] = useState("0");
-  const [accommodationType, setAccommodationType] = useState("hotel_or_rooms");
-  const [foodType, setFoodType] = useState("non_veg");
-  const [allergies, setAllergies] = useState("");
-  const [budgetPreference, setBudgetPreference] = useState("");
-  const [preferredTransport, setPreferredTransport] = useState("car");
+  const [adults, setAdults] = useState(peopleCount || 1);
+  const [children, setChildren] = useState(0);
+  const [accommodationType, setAccommodationType] = useState("Hotel / Rooms");
+  const [foodType, setFoodType] = useState("Non-Veg");
+  const [transportPreference, setTransportPreference] = useState("Car");
+  const [budgetPreference, setBudgetPreference] = useState("10,000 - 20,000");
+  const [notes, setNotes] = useState(extraNotes || "");
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
@@ -57,8 +62,11 @@ export default function SendItineraryModal({
       setLoading(true);
 
       await api.post("/booking-itineraries", {
-        itineraryText,
+        name,
+        phoneNumber,
+        email,
         mood,
+        itineraryText,
         selectedPlaces,
         selectedActivities,
         days,
@@ -67,25 +75,29 @@ export default function SendItineraryModal({
         travelCompanions,
         customCompanionNote,
         extraNotes,
-
-        name,
-        phoneNumber,
-        email,
-        adults: Number(adults),
-        children: Number(children),
+        adults,
+        children,
         accommodationType,
         foodType,
-        allergies,
+        transportPreference,
         budgetPreference,
-        preferredTransport,
+        notes,
       });
 
-      window.dispatchEvent(new Event("bookingItinerarySent"));
-      onSuccess();
+      // remove from saved itineraries too
+      if (itineraryId) {
+        try {
+          await api.delete(`/itineraries/my-itineraries/${itineraryId}`);
+        } catch (deleteError) {
+          console.error("Failed to remove saved itinerary after send:", deleteError);
+        }
+      }
+
+      onSuccess?.();
       onClose();
     } catch (error: any) {
       console.error("send itinerary modal error:", error?.response?.data || error);
-      alert(error?.response?.data?.message || "Failed to send itinerary.");
+      alert(error?.response?.data?.message || "Failed to send itinerary to admin");
     } finally {
       setLoading(false);
     }
@@ -99,172 +111,173 @@ export default function SendItineraryModal({
       >
         <button
           type="button"
-          className="send-itinerary-modal__close"
+          className="send-itinerary-close"
           onClick={onClose}
         >
           ×
         </button>
 
-        <div className="send-itinerary-modal__header">
+        <div className="send-itinerary-header">
           <h2>Send to Admin</h2>
-          <p>
-            Add your trip details so our team can review and help arrange your
-            plan.
-          </p>
+          <p>Add your trip details so our team can review your request.</p>
         </div>
 
-        <div className="send-itinerary-modal__body">
-          <div className="send-itinerary-modal__preview">
-            <h3>Itinerary Preview</h3>
-            <div className="send-itinerary-modal__preview-box">
-              <p>{itineraryText}</p>
-            </div>
+        <form className="send-itinerary-form" onSubmit={handleSubmit}>
+          <div className="send-itinerary-grid">
+            <div className="send-itinerary-preview">
+              <h4>Itinerary Preview</h4>
 
-            <div className="send-itinerary-modal__trip-meta">
-              <span>Mood: {mood}</span>
-              <span>Days: {days}</span>
-              <span>People: {peopleCount}</span>
-            </div>
-          </div>
+              <div className="send-itinerary-preview-box">
+                <p>{itineraryText}</p>
+              </div>
 
-          <form onSubmit={handleSubmit} className="send-itinerary-modal__form">
-            <div className="send-itinerary-modal__section">
-              <h4>Contact Details</h4>
-
-              <div className="send-itinerary-modal__grid">
-                <div className="field full">
-                  <label>Full Name *</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Phone Number *</label>
-                  <input
-                    type="text"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="Enter phone number"
-                    required
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Email Address *</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter email address"
-                    required
-                  />
-                </div>
+              <div className="send-itinerary-tags">
+                <span>Mood: {mood}</span>
+                <span>Days: {days}</span>
+                <span>People: {peopleCount}</span>
               </div>
             </div>
 
-            <div className="send-itinerary-modal__section">
+            <div className="send-itinerary-fields">
               <h4>Travel Preferences</h4>
 
-              <div className="send-itinerary-modal__grid">
-                <div className="field">
+              <div className="send-itinerary-row">
+                <input
+                  type="text"
+                  placeholder="Full name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="send-itinerary-row">
+                <input
+                  type="text"
+                  placeholder="Phone number"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  required
+                />
+                <input
+                  type="text"
+                  placeholder="Specific date (optional)"
+                  value={specificDate}
+                  readOnly
+                />
+              </div>
+
+              <div className="send-itinerary-row">
+                <div className="field-block">
                   <label>Adults</label>
                   <input
                     type="number"
+                    min={1}
                     value={adults}
-                    onChange={(e) => setAdults(e.target.value)}
-                    min="0"
+                    onChange={(e) => setAdults(Number(e.target.value))}
                   />
                 </div>
 
-                <div className="field">
+                <div className="field-block">
                   <label>Children</label>
                   <input
                     type="number"
+                    min={0}
                     value={children}
-                    onChange={(e) => setChildren(e.target.value)}
-                    min="0"
+                    onChange={(e) => setChildren(Number(e.target.value))}
                   />
                 </div>
+              </div>
 
-                <div className="field">
+              <div className="send-itinerary-row">
+                <div className="field-block">
                   <label>Accommodation Type</label>
                   <select
                     value={accommodationType}
                     onChange={(e) => setAccommodationType(e.target.value)}
                   >
-                    <option value="hotel_or_rooms">Hotel / Rooms</option>
-                    <option value="rented_house">Rented House</option>
-                    <option value="hostel_or_dorm">Hostel / Dorm</option>
-                    <option value="camping">Camping</option>
+                    <option>Hotel / Rooms</option>
+                    <option>Villa</option>
+                    <option>Resort</option>
+                    <option>Guest House</option>
                   </select>
                 </div>
 
-                <div className="field">
+                <div className="field-block">
                   <label>Food Type</label>
                   <select
                     value={foodType}
                     onChange={(e) => setFoodType(e.target.value)}
                   >
-                    <option value="veg">Veg</option>
-                    <option value="non_veg">Non-Veg</option>
+                    <option>Non-Veg</option>
+                    <option>Veg</option>
+                    <option>Mixed</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="field-block full">
+                <label>Notes / Questions</label>
+                <textarea
+                  placeholder="Any notes, special requests or questions?"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={4}
+                />
+              </div>
+
+              <div className="send-itinerary-row">
+                <div className="field-block">
+                  <label>Budget Preference</label>
+                  <select
+                    value={budgetPreference}
+                    onChange={(e) => setBudgetPreference(e.target.value)}
+                  >
+                    <option>10,000 - 20,000</option>
+                    <option>20,000 - 40,000</option>
+                    <option>40,000 - 60,000</option>
+                    <option>60,000+</option>
                   </select>
                 </div>
 
-                <div className="field full">
-                  <label>Allergies / Food Notes</label>
-                  <input
-                    type="text"
-                    value={allergies}
-                    onChange={(e) => setAllergies(e.target.value)}
-                    placeholder="If any allergies mention here"
-                  />
-                </div>
-
-                <div className="field">
-                  <label>Budget Preference</label>
-                  <input
-                    type="text"
-                    value={budgetPreference}
-                    onChange={(e) => setBudgetPreference(e.target.value)}
-                    placeholder="Enter budget preference"
-                  />
-                </div>
-
-                <div className="field">
+                <div className="field-block">
                   <label>Preferred Transport</label>
                   <select
-                    value={preferredTransport}
-                    onChange={(e) => setPreferredTransport(e.target.value)}
+                    value={transportPreference}
+                    onChange={(e) => setTransportPreference(e.target.value)}
                   >
-                    <option value="car">Car</option>
-                    <option value="van">Van</option>
-                    <option value="bus">Bus</option>
+                    <option>Car</option>
+                    <option>Van</option>
+                    <option>Bus</option>
+                    <option>Train</option>
                   </select>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="send-itinerary-modal__actions">
-              <button
-                type="button"
-                className="secondary-btn"
-                onClick={onClose}
-                disabled={loading}
-              >
-                Cancel
-              </button>
+          <div className="send-itinerary-actions">
+            <button
+              type="button"
+              className="cancel-btn"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Cancel
+            </button>
 
-              <button type="submit" className="primary-btn" disabled={loading}>
-                {loading ? "Sending..." : "Send to Admin"}
-              </button>
-            </div>
-          </form>
-        </div>
+            <button type="submit" className="submit-btn" disabled={loading}>
+              {loading ? "Sending..." : "Send to Admin"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

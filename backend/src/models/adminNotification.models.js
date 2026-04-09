@@ -1,5 +1,3 @@
-// FILE: backendfinal/src/models/adminNotification.models.js
-
 import mongoose from "mongoose";
 
 const adminNotificationSchema = new mongoose.Schema(
@@ -12,6 +10,7 @@ const adminNotificationSchema = new mongoose.Schema(
         "place_report",
         "booking_created",
         "payment_completed",
+        "itinerary",
       ],
       required: true,
     },
@@ -26,6 +25,17 @@ const adminNotificationSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: "",
+    },
+
+    entityType: {
+      type: String,
+      enum: ["place", "booking", "payment", "itinerary", "none"],
+      default: "none",
+    },
+
+    entityId: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
     },
 
     place: {

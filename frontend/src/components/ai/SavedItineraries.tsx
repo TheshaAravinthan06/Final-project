@@ -46,6 +46,11 @@ export default function SavedItineraries() {
 
   useEffect(() => {
     fetchItineraries();
+
+    const handleSaved = () => fetchItineraries();
+    window.addEventListener("itinerarySaved", handleSaved);
+
+    return () => window.removeEventListener("itinerarySaved", handleSaved);
   }, []);
 
   const handleViewFull = (item: Itinerary) => {
@@ -58,6 +63,16 @@ export default function SavedItineraries() {
     setShowSendModal(true);
   };
 
+  const handleCloseFullModal = () => {
+    setShowFullModal(false);
+    setSelectedItinerary(null);
+  };
+
+  const handleCloseSendModal = () => {
+    setShowSendModal(false);
+    setSelectedItinerary(null);
+  };
+
   const handleDeleteItinerary = async (id: string) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this saved itinerary?"
@@ -67,7 +82,9 @@ export default function SavedItineraries() {
 
     try {
       setDeleteLoadingId(id);
-      await api.delete(`/itineraries/${id}`);
+
+      // correct backend route
+      await api.delete(`/itineraries/my-itineraries/${id}`);
 
       setItineraries((prev) => prev.filter((item) => item._id !== id));
 
@@ -104,171 +121,171 @@ export default function SavedItineraries() {
 
   return (
     <>
-      <div className="saved-itineraries">
-        <h2>Saved Itineraries</h2>
-
-        <div className="saved-grid">
-          {itineraries.map((item) => (
-            <div key={item._id} className="saved-card">
-              <div className="saved-card__top">
-                <h3>{item.mood} Trip</h3>
-                <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+      <div className="saved-itinerary-grid">
+        {itineraries.map((item) => (
+          <div key={item._id} className="saved-itinerary-card">
+            <div className="saved-itinerary-card-top">
+              <div>
+                <p className="saved-itinerary-label">Mood</p>
+                <h3>{item.mood}</h3>
               </div>
 
-              <p>
-                <strong>Places:</strong>{" "}
-                {item.selectedPlaces?.length
-                  ? item.selectedPlaces.join(", ")
-                  : "No places selected"}
-              </p>
+              <span className="saved-itinerary-days">{item.days} Days</span>
+            </div>
 
-              <p>
-                <strong>Days:</strong> {item.days}
-              </p>
+            <div className="saved-itinerary-meta">
+              <span>
+                {item.selectedPlaces?.slice(0, 3).join(", ")}
+                {item.selectedPlaces?.length > 3 ? "..." : ""}
+              </span>
+            </div>
 
-              <p>
-                <strong>People:</strong> {item.peopleCount}
-              </p>
+            <p className="saved-itinerary-text">
+              {item.itineraryText?.length > 180
+                ? `${item.itineraryText.slice(0, 180)}...`
+                : item.itineraryText}
+            </p>
 
-              {item.specificDate ? (
-                <p>
-                  <strong>Date:</strong> {item.specificDate}
-                </p>
-              ) : null}
+            <div className="saved-itinerary-footer">
+              <span className="saved-itinerary-date">
+                {new Date(item.createdAt).toLocaleDateString()}
+              </span>
 
-              <p className="saved-preview">
-                {item.itineraryText.length > 140
-                  ? `${item.itineraryText.slice(0, 140)}...`
-                  : item.itineraryText}
-              </p>
-
-              <div className="saved-card__actions saved-itinerary-card__actions">
+              <div className="saved-itinerary-actions">
                 <button
                   type="button"
-                  className="view-btn"
+                  className="saved-itinerary-btn outline"
                   onClick={() => handleViewFull(item)}
                 >
-                  View Full
+                  View
                 </button>
 
                 <button
                   type="button"
-                  className="delete-btn"
+                  className="saved-itinerary-btn fill"
+                  onClick={() => handleOpenSendModal(item)}
+                >
+                  Send to Admin
+                </button>
+
+                <button
+                  type="button"
+                  className="saved-itinerary-btn danger"
                   onClick={() => handleDeleteItinerary(item._id)}
                   disabled={deleteLoadingId === item._id}
                 >
                   {deleteLoadingId === item._id ? "Deleting..." : "Delete"}
                 </button>
-
-                <button
-                  type="button"
-                  className="send-btn"
-                  onClick={() => handleOpenSendModal(item)}
-                >
-                  Send to Admin
-                </button>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
       {showFullModal && selectedItinerary && (
-        <div
-          className="saved-itinerary-modal-backdrop"
+  <div
+    className="saved-itinerary-modal-backdrop"
+    onClick={handleCloseFullModal}
+  >
+    <div
+      className="saved-itinerary-modal"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        className="saved-itinerary-modal__close"
+        onClick={handleCloseFullModal}
+      >
+        ×
+      </button>
+
+      <div className="saved-itinerary-modal__header">
+        <div>
+          <p className="saved-itinerary-label">Mood</p>
+          <h2>{selectedItinerary.mood} Trip</h2>
+        </div>
+
+        <span className="saved-itinerary-modal__days">
+          {selectedItinerary.days} Days
+        </span>
+      </div>
+
+      <div className="saved-itinerary-modal__meta-grid">
+        <div className="saved-itinerary-modal__meta-card">
+          <span className="saved-itinerary-modal__meta-label">Places</span>
+          <p>{selectedItinerary.selectedPlaces?.join(", ") || "No places selected"}</p>
+        </div>
+
+        <div className="saved-itinerary-modal__meta-card">
+          <span className="saved-itinerary-modal__meta-label">People</span>
+          <p>{selectedItinerary.peopleCount}</p>
+        </div>
+
+        <div className="saved-itinerary-modal__meta-card">
+          <span className="saved-itinerary-modal__meta-label">Date</span>
+          <p>{selectedItinerary.specificDate || "Flexible"}</p>
+        </div>
+      </div>
+
+      <div className="saved-itinerary-modal__section">
+        <h4>Full Itinerary</h4>
+        <div className="saved-itinerary-modal__content">
+          {selectedItinerary.itineraryText}
+        </div>
+      </div>
+
+      <div className="saved-itinerary-modal__actions">
+        <button
+          type="button"
+          className="delete-btn"
+          onClick={() => handleDeleteItinerary(selectedItinerary._id)}
+          disabled={deleteLoadingId === selectedItinerary._id}
+        >
+          {deleteLoadingId === selectedItinerary._id ? "Deleting..." : "Delete"}
+        </button>
+
+        <button
+          type="button"
+          className="send-btn"
           onClick={() => {
             setShowFullModal(false);
-            setSelectedItinerary(null);
+            setShowSendModal(true);
           }}
         >
-          <div
-            className="saved-itinerary-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="saved-itinerary-modal__close"
-              onClick={() => {
-                setShowFullModal(false);
-                setSelectedItinerary(null);
-              }}
-            >
-              ×
-            </button>
+          Send to Admin
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
-            <h2>{selectedItinerary.mood} Trip</h2>
-
-            <div className="saved-itinerary-modal__meta">
-              <span>
-                <strong>Places:</strong>{" "}
-                {selectedItinerary.selectedPlaces?.join(", ") || "No places selected"}
-              </span>
-              <span>
-                <strong>Days:</strong> {selectedItinerary.days}
-              </span>
-              <span>
-                <strong>People:</strong> {selectedItinerary.peopleCount}
-              </span>
-              {selectedItinerary.specificDate ? (
-                <span>
-                  <strong>Date:</strong> {selectedItinerary.specificDate}
-                </span>
-              ) : null}
-            </div>
-
-            <div className="saved-itinerary-modal__content">
-              {selectedItinerary.itineraryText}
-            </div>
-
-            <div className="saved-itinerary-modal__actions">
-              <button
-                type="button"
-                className="delete-btn"
-                onClick={() => handleDeleteItinerary(selectedItinerary._id)}
-                disabled={deleteLoadingId === selectedItinerary._id}
-              >
-                {deleteLoadingId === selectedItinerary._id ? "Deleting..." : "Delete"}
-              </button>
-
-              <button
-                type="button"
-                className="send-btn"
-                onClick={() => {
-                  setShowFullModal(false);
-                  setShowSendModal(true);
-                }}
-              >
-                Send to Admin
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showSendModal && selectedItinerary && (
-        <SendItineraryModal
-          isOpen={showSendModal}
-          onClose={() => {
-            setShowSendModal(false);
-            setSelectedItinerary(null);
-          }}
-          onSuccess={() => {
-            setItineraries((prev) =>
-              prev.filter((item) => item._id !== selectedItinerary._id)
-            );
-          }}
-          itineraryText={selectedItinerary.itineraryText}
-          mood={selectedItinerary.mood}
-          selectedPlaces={selectedItinerary.selectedPlaces || []}
-          selectedActivities={selectedItinerary.selectedActivities || []}
-          days={selectedItinerary.days}
-          specificDate={selectedItinerary.specificDate || ""}
-          peopleCount={selectedItinerary.peopleCount}
-          travelCompanions={selectedItinerary.travelCompanions || []}
-          customCompanionNote={selectedItinerary.customCompanionNote || ""}
-          extraNotes={selectedItinerary.extraNotes || ""}
-        />
-      )}
+     {showSendModal && selectedItinerary && (
+  <SendItineraryModal
+    isOpen={showSendModal}
+    onClose={() => {
+      setShowSendModal(false);
+      setSelectedItinerary(null);
+    }}
+    onSuccess={() => {
+      setItineraries((prev) =>
+        prev.filter((item) => item._id !== selectedItinerary._id)
+      );
+      setShowSendModal(false);
+      setSelectedItinerary(null);
+    }}
+    itineraryId={selectedItinerary._id}
+    itineraryText={selectedItinerary.itineraryText}
+    mood={selectedItinerary.mood}
+    selectedPlaces={selectedItinerary.selectedPlaces || []}
+    selectedActivities={selectedItinerary.selectedActivities || []}
+    days={selectedItinerary.days}
+    specificDate={selectedItinerary.specificDate || ""}
+    peopleCount={selectedItinerary.peopleCount}
+    travelCompanions={selectedItinerary.travelCompanions || []}
+    customCompanionNote={selectedItinerary.customCompanionNote || ""}
+    extraNotes={selectedItinerary.extraNotes || ""}
+  />
+)}
     </>
   );
 }

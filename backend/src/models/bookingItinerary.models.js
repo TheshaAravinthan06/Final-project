@@ -127,7 +127,7 @@ const bookingItinerarySchema = new mongoose.Schema(
       default: "non_veg",
     },
 
-    allergies: {
+    notes: {
       type: String,
       default: "",
       trim: true,

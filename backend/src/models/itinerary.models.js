@@ -10,19 +10,19 @@ const itinerarySchema = new mongoose.Schema(
 
     name: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
     },
 
     phoneNumber: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
     },
 
     email: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
       lowercase: true,
     },
@@ -41,13 +41,13 @@ const itinerarySchema = new mongoose.Schema(
 
     accommodationType: {
       type: String,
-      enum: ["Hotel or Rooms", "Rented House", "Hostel or Dorm", "Camping"],
+      enum: ["", "hotel_or_rooms", "rented_house", "hostel_or_dorm", "camping"],
       default: "",
     },
 
     foodType: {
       type: String,
-      enum: ["Veg", "Non-Veg"],
+      enum: ["", "veg", "non_veg"],
       default: "",
     },
 
@@ -65,7 +65,7 @@ const itinerarySchema = new mongoose.Schema(
 
     preferredTransport: {
       type: String,
-      enum: ["Car", "Van", "Bus"],
+      enum: ["", "car", "van", "bus"],
       default: "",
     },
 

@@ -320,11 +320,11 @@ export const sendItineraryToAdmin = async (req, res) => {
 
       adults: Number(adults || 0),
       children: Number(children || 0),
-      accommodationType: accommodationType || "",
-      foodType: foodType || "",
+      accommodationType: accommodationType || "hotel_or_rooms",
+      foodType: foodType || "non_veg",
       allergies: allergies || "",
       budgetPreference: budgetPreference || "",
-      preferredTransport: preferredTransport || "",
+      preferredTransport: preferredTransport || "car",
 
       mood,
       selectedPlaces,

@@ -109,7 +109,11 @@ export const googleAuthCallback = async (req, res) => {
     res.cookie("token", token, accessCookieOptions);
     res.cookie("refreshToken", refreshToken, refreshCookieOptions);
 
-    return res.redirect(`${frontendBase()}/`);
+    if (user.role === "admin") {
+      return res.redirect(`${frontendBase()}/admin`);
+    }
+
+    return res.redirect(`${frontendBase()}/home`);
   } catch (error) {
     console.error("GOOGLE CALLBACK ERROR:", error);
     return res.redirect(`${frontendBase()}/?error=google_auth`);

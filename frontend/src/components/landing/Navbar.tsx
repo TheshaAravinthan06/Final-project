@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+
 type NavbarProps = {
   onOpenLogin: () => void;
   onOpenRegister: () => void;
@@ -13,7 +14,9 @@ export default function Navbar({
     <header className="navbar-wrap">
       <div className="container navbar">
         <div className="logo-area">
-          <div className="logo-icon">✦</div>
+          <div className="logo-icon">
+      <div className="logo-icon">✦</div>
+          </div>
           <div>
             <h2 className="logo-title">PackPalz</h2>
             <p className="logo-sub">Travel with meaning</p>

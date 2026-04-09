@@ -421,7 +421,7 @@ export default function FloatingAIChat({
   if (!isOpen) return null;
 
   return (
-    <div className={`floating-ai-chat ${fullPage ? "full-page" : ""}`}>
+    <div className={`floating-ai-chat ${fullPage ? "floating-ai-chat--page" : "floating-ai-chat--widget"}`}>
       <div className="floating-ai-messages">
         {messages.map((message) => (
           <div

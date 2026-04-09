@@ -26,7 +26,7 @@ export const createBookingItinerary = async (req, res) => {
       children,
       accommodationType,
       foodType,
-      allergies,
+      notes,
       budgetPreference,
       preferredTransport,
     } = req.body;
@@ -69,7 +69,7 @@ export const createBookingItinerary = async (req, res) => {
       children: Number(children || 0),
       accommodationType: accommodationType || "hotel_or_rooms",
       foodType: foodType || "non_veg",
-      allergies: allergies || "",
+      notes: notes || "",
       budgetPreference: budgetPreference || "",
       preferredTransport: preferredTransport || "car",
 
@@ -191,6 +191,36 @@ export const updateBookingItineraryStatus = async (req, res) => {
     return res.status(500).json({
       message: "Failed to update booking itinerary status",
       error: error.message,
+    });
+  }
+};
+
+export const deleteMyBookingItinerary = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid itinerary id" });
+    }
+
+    const booking = await BookingItinerary.findOne({
+      _id: id,
+      user: req.user._id,
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: "Sent itinerary not found" });
+    }
+
+    await BookingItinerary.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      message: "Sent itinerary deleted successfully",
+    });
+  } catch (error) {
+    console.error("deleteMyBookingItinerary error:", error);
+    return res.status(500).json({
+      message: "Failed to delete sent itinerary",
     });
   }
 };

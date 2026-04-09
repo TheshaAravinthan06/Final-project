@@ -49,7 +49,8 @@ type TravelPick = {
   createdBy?: { _id?: string; username?: string };
 };
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
 
 const getImageSrc = (imageUrl?: string) => {
   if (!imageUrl) return "/images/ella.jpg";
@@ -60,14 +61,18 @@ const getImageSrc = (imageUrl?: string) => {
 const formatDate = (dateString?: string) => {
   if (!dateString) return "-";
   return new Date(dateString).toLocaleDateString("en-US", {
-    month: "long", day: "numeric", year: "numeric",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
   });
 };
 
 const formatShortDate = (dateString?: string) => {
   if (!dateString) return "-";
   return new Date(dateString).toLocaleDateString("en-US", {
-    month: "short", day: "numeric", year: "numeric",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 };
 
@@ -76,76 +81,117 @@ const formatCurrency = (value?: number) =>
 
 const getDurationLabel = (startDate?: string, endDate?: string) => {
   if (!startDate || !endDate) return "Trip package";
+
   const start = new Date(startDate).getTime();
-  const end   = new Date(endDate).getTime();
+  const end = new Date(endDate).getTime();
+
   if (Number.isNaN(start) || Number.isNaN(end)) return "Trip package";
-  const diffDays = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1);
+
+  const diffDays =
+    Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1);
   const nights = Math.max(0, diffDays - 1);
-  return `${diffDays} Day${diffDays > 1 ? "s" : ""}, ${nights} Night${nights !== 1 ? "s" : ""}`;
+
+  return `${diffDays} Day${diffDays > 1 ? "s" : ""}, ${nights} Night${
+    nights !== 1 ? "s" : ""
+  }`;
 };
 
 export default function TravelPickDetailsPage() {
-  const params       = useParams<{ id: string }>();
-  const router       = useRouter();
+  const params = useParams();
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const travelPickId = params?.id;
 
-  const [pick,             setPick]             = useState<TravelPick | null>(null);
-  const [loading,          setLoading]          = useState(true);
+  const travelPickId =
+    typeof params?.id === "string"
+      ? params.id
+      : Array.isArray(params?.id)
+      ? params.id[0]
+      : "";
+
+  const [pick, setPick] = useState<TravelPick | null>(null);
+  const [loading, setLoading] = useState(true);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [paymentMessage,   setPaymentMessage]   = useState("");
+  const [paymentMessage, setPaymentMessage] = useState("");
   const [verifyingPayment, setVerifyingPayment] = useState(false);
-  const [activeTab,        setActiveTab]        = useState(0);
+  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
     const fetchTravelPick = async () => {
-      if (!travelPickId) return;
+      if (
+        !travelPickId ||
+        travelPickId === "new" ||
+        travelPickId === "undefined" ||
+        travelPickId === "null" ||
+        travelPickId.length !== 24
+      ) {
+        console.error("Invalid travelPickId:", travelPickId);
+        setPick(null);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
-        const res = await api.get(`/travel-picks/${travelPickId}`);
+        const res = await api.get(`/travel-picks/admin/${travelPickId}`);
         setPick(res.data?.travelPick || null);
-      } catch (error) {
-        console.error("Failed to load travel pick details:", error);
+      } catch (error: any) {
+        console.error(
+          "Failed to load travel pick details:",
+          error?.response?.data || error
+        );
         setPick(null);
       } finally {
         setLoading(false);
       }
     };
+
     fetchTravelPick();
   }, [travelPickId]);
 
   useEffect(() => {
     const paymentState = searchParams.get("payment");
-    const sessionId    = searchParams.get("session_id");
-    if (paymentState === "cancelled") { setPaymentMessage("Payment was cancelled."); return; }
+    const sessionId = searchParams.get("session_id");
+
+    if (paymentState === "cancelled") {
+      setPaymentMessage("Payment was cancelled.");
+      return;
+    }
+
     if (paymentState !== "success" || !sessionId || !travelPickId) return;
 
     const verifyPayment = async () => {
       try {
         setVerifyingPayment(true);
-        const res = await api.get(`/payments/verify-session?sessionId=${sessionId}`);
+        const res = await api.get(
+          `/payments/verify-session?sessionId=${sessionId}`
+        );
+
         setPaymentMessage(
           res.data?.payment
             ? "Payment successful. Your booking was confirmed."
             : "Payment completed, but verification is pending."
         );
-        router.replace(`/travel-picks/${travelPickId}`);
+
+        router.replace(`/admin/travel-picks/${travelPickId}`);
       } catch (error: any) {
-        setPaymentMessage(error?.response?.data?.message || "Payment verification failed.");
+        setPaymentMessage(
+          error?.response?.data?.message || "Payment verification failed."
+        );
       } finally {
         setVerifyingPayment(false);
       }
     };
+
     verifyPayment();
   }, [searchParams, router, travelPickId]);
 
-  const imageSrc      = useMemo(() => getImageSrc(pick?.imageUrl), [pick?.imageUrl]);
-  const durationLabel = useMemo(() => getDurationLabel(pick?.startDate, pick?.endDate), [pick?.startDate, pick?.endDate]);
+  const imageSrc = useMemo(() => getImageSrc(pick?.imageUrl), [pick?.imageUrl]);
+  const durationLabel = useMemo(
+    () => getDurationLabel(pick?.startDate, pick?.endDate),
+    [pick?.startDate, pick?.endDate]
+  );
 
-  /* payment breakdown percentage */
   const advancePct = pick?.advancePercentage || 0;
-  const paidBarW   = pick?.paymentStatus === "paid" ? 100 : advancePct;
-
   const tabs = ["Overview", "Includes", "Dates & Policies", "Payment"];
 
   if (loading) {
@@ -177,12 +223,15 @@ export default function TravelPickDetailsPage() {
   return (
     <section className="tpd-page">
       <div className="tpd-shell">
-
-        {/* ── TOP NAV ── */}
         <div className="tpd-topnav">
-          <button type="button" className="tpd-back-btn" onClick={() => router.back()}>
+          <button
+            type="button"
+            className="tpd-back-btn"
+            onClick={() => router.back()}
+          >
             <FiArrowLeft /> Back
           </button>
+
           <nav className="tpd-breadcrumb">
             <span>Travel Picks</span>
             <span className="tpd-breadcrumb__sep">/</span>
@@ -190,26 +239,43 @@ export default function TravelPickDetailsPage() {
           </nav>
         </div>
 
-        {/* ── PAYMENT BANNER ── */}
         {(paymentMessage || verifyingPayment) && (
-          <div className={`tpd-banner ${paymentMessage.includes("successful") ? "tpd-banner--success" : "tpd-banner--warn"}`}>
+          <div
+            className={`tpd-banner ${
+              paymentMessage.includes("successful")
+                ? "tpd-banner--success"
+                : "tpd-banner--warn"
+            }`}
+          >
             {verifyingPayment ? (
-              <><div className="tpd-state__spinner tpd-state__spinner--sm" /> Verifying your payment…</>
+              <>
+                <div className="tpd-state__spinner tpd-state__spinner--sm" />
+                Verifying your payment…
+              </>
             ) : (
-              <><FiCheckCircle /> {paymentMessage}</>
+              <>
+                <FiCheckCircle /> {paymentMessage}
+              </>
             )}
           </div>
         )}
 
-        {/* ── HERO ── */}
         <div className="tpd-hero">
           <div className="tpd-hero__image-wrap">
             <img src={imageSrc} alt={pick.title} className="tpd-hero__image" />
             <div className="tpd-hero__image-overlay">
               <span className="tpd-eyebrow">Book Now</span>
               <div className="tpd-hero__chips">
-                <span className="tpd-chip tpd-chip--dark"><FiClock /> {durationLabel}</span>
-                <span className={`tpd-chip ${pick.isBookingOpen ? "tpd-chip--open" : "tpd-chip--closed"}`}>
+                <span className="tpd-chip tpd-chip--dark">
+                  <FiClock /> {durationLabel}
+                </span>
+                <span
+                  className={`tpd-chip ${
+                    pick.isBookingOpen
+                      ? "tpd-chip--open"
+                      : "tpd-chip--closed"
+                  }`}
+                >
                   {pick.isBookingOpen ? "✓ Booking Open" : "✗ Booking Closed"}
                 </span>
               </div>
@@ -220,36 +286,44 @@ export default function TravelPickDetailsPage() {
             <h1 className="tpd-title">{pick.title}</h1>
 
             <div className="tpd-meta-row">
-              <span className="tpd-meta-item"><FiMapPin />{pick.place}</span>
+              <span className="tpd-meta-item">
+                <FiMapPin />
+                {pick.place}
+              </span>
               <span className="tpd-meta-item">
                 <FiCalendar />
-                {formatShortDate(pick.startDate)} – {formatShortDate(pick.endDate)}
+                {formatShortDate(pick.startDate)} –{" "}
+                {formatShortDate(pick.endDate)}
               </span>
               {pick.createdBy?.username && (
-                <span className="tpd-meta-item"><FiStar />by {pick.createdBy.username}</span>
+                <span className="tpd-meta-item">
+                  <FiStar />
+                  by {pick.createdBy.username}
+                </span>
               )}
             </div>
 
             <p className="tpd-caption">{pick.caption}</p>
-
-
           </div>
 
-          {/* Booking card */}
           <aside className="tpd-booking-card">
             <div className="tpd-booking-card__price-row">
               <span className="tpd-booking-card__label">Price / person</span>
-              <strong className="tpd-booking-card__price">{formatCurrency(pick.price)}</strong>
+              <strong className="tpd-booking-card__price">
+                {formatCurrency(pick.price)}
+              </strong>
             </div>
 
-            {/* Payment progress bar */}
             <div className="tpd-progress-wrap">
               <div className="tpd-progress-label">
                 <span>Advance required</span>
                 <span className="tpd-progress-label__pct">{advancePct}%</span>
               </div>
               <div className="tpd-progress-track">
-                <div className="tpd-progress-fill" style={{ width: `${advancePct}%` }} />
+                <div
+                  className="tpd-progress-fill"
+                  style={{ width: `${advancePct}%` }}
+                />
               </div>
             </div>
 
@@ -268,7 +342,9 @@ export default function TravelPickDetailsPage() {
               </div>
               {pick.balanceDueDate && (
                 <div className="tpd-booking-row tpd-booking-row--muted">
-                  <span><FiClock /> Balance due</span>
+                  <span>
+                    <FiClock /> Balance due
+                  </span>
                   <strong>{formatShortDate(pick.balanceDueDate)}</strong>
                 </div>
               )}
@@ -282,7 +358,9 @@ export default function TravelPickDetailsPage() {
 
             <button
               type="button"
-              className={`tpd-book-btn ${!pick.isBookingOpen ? "tpd-book-btn--disabled" : ""}`}
+              className={`tpd-book-btn ${
+                !pick.isBookingOpen ? "tpd-book-btn--disabled" : ""
+              }`}
               disabled={!pick.isBookingOpen}
               onClick={() => setPaymentModalOpen(true)}
             >
@@ -291,27 +369,33 @@ export default function TravelPickDetailsPage() {
 
             {pick.bookingCloseDate && (
               <p className="tpd-booking-card__deadline">
-                <FiAlertCircle /> Booking closes {formatShortDate(pick.bookingCloseDate)}
+                <FiAlertCircle /> Booking closes{" "}
+                {formatShortDate(pick.bookingCloseDate)}
               </p>
             )}
           </aside>
         </div>
 
-        {/* ── STAT STRIP ── */}
         <div className="tpd-stat-strip">
           <div className="tpd-stat-strip__item">
             <span className="tpd-stat-strip__label">Total Price</span>
-            <span className="tpd-stat-strip__val">{formatCurrency(pick.price)}</span>
+            <span className="tpd-stat-strip__val">
+              {formatCurrency(pick.price)}
+            </span>
           </div>
           <div className="tpd-stat-strip__divider" />
           <div className="tpd-stat-strip__item tpd-stat-strip__item--green">
             <span className="tpd-stat-strip__label">Advance ({advancePct}%)</span>
-            <span className="tpd-stat-strip__val">{formatCurrency(pick.advanceAmount)}</span>
+            <span className="tpd-stat-strip__val">
+              {formatCurrency(pick.advanceAmount)}
+            </span>
           </div>
           <div className="tpd-stat-strip__divider" />
           <div className="tpd-stat-strip__item tpd-stat-strip__item--amber">
             <span className="tpd-stat-strip__label">Balance Remaining</span>
-            <span className="tpd-stat-strip__val">{formatCurrency(pick.remainingAmount)}</span>
+            <span className="tpd-stat-strip__val">
+              {formatCurrency(pick.remainingAmount)}
+            </span>
           </div>
           <div className="tpd-stat-strip__divider" />
           <div className="tpd-stat-strip__item">
@@ -320,7 +404,6 @@ export default function TravelPickDetailsPage() {
           </div>
         </div>
 
-        {/* ── TABS ── */}
         <div className="tpd-tabs">
           {tabs.map((tab, i) => (
             <button
@@ -334,14 +417,10 @@ export default function TravelPickDetailsPage() {
           ))}
         </div>
 
-        {/* ── TAB CONTENT ── */}
         <div className="tpd-body">
-
-          {/* TAB 0 — Overview */}
           {activeTab === 0 && (
             <div className="tpd-grid">
               <div className="tpd-col-main">
-
                 <div className="tpd-card">
                   <h2 className="tpd-card__title">About This Trip</h2>
                   <p className="tpd-card__text">{pick.caption}</p>
@@ -349,7 +428,9 @@ export default function TravelPickDetailsPage() {
 
                 {pick.placesToVisit?.length ? (
                   <div className="tpd-card">
-                    <h2 className="tpd-card__title">Places You&apos;ll Visit</h2>
+                    <h2 className="tpd-card__title">
+                      Places You&apos;ll Visit
+                    </h2>
                     <div className="tpd-places-grid">
                       {pick.placesToVisit.map((place, index) => (
                         <div className="tpd-place-card" key={`${place}-${index}`}>
@@ -365,7 +446,6 @@ export default function TravelPickDetailsPage() {
                     </div>
                   </div>
                 ) : null}
-
               </div>
 
               <div className="tpd-col-side">
@@ -373,18 +453,33 @@ export default function TravelPickDetailsPage() {
                   <h2 className="tpd-card__title">Quick Info</h2>
                   <div className="tpd-info-list">
                     <div className="tpd-info-row">
-                      <span className="tpd-info-icon"><FiMapPin /></span>
-                      <div><strong>Destination</strong><p>{pick.place}</p></div>
+                      <span className="tpd-info-icon">
+                        <FiMapPin />
+                      </span>
+                      <div>
+                        <strong>Destination</strong>
+                        <p>{pick.place}</p>
+                      </div>
                     </div>
                     <div className="tpd-info-row">
-                      <span className="tpd-info-icon"><FiCalendar /></span>
-                      <div><strong>Duration</strong><p>{durationLabel}</p></div>
+                      <span className="tpd-info-icon">
+                        <FiCalendar />
+                      </span>
+                      <div>
+                        <strong>Duration</strong>
+                        <p>{durationLabel}</p>
+                      </div>
                     </div>
                     <div className="tpd-info-row">
-                      <span className="tpd-info-icon"><FiCalendar /></span>
+                      <span className="tpd-info-icon">
+                        <FiCalendar />
+                      </span>
                       <div>
                         <strong>Travel Dates</strong>
-                        <p>{formatDate(pick.startDate)} – {formatDate(pick.endDate)}</p>
+                        <p>
+                          {formatDate(pick.startDate)} –{" "}
+                          {formatDate(pick.endDate)}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -393,15 +488,14 @@ export default function TravelPickDetailsPage() {
             </div>
           )}
 
-          {/* TAB 1 — What's Included */}
           {activeTab === 1 && (
             <div className="tpd-includes-grid">
               {[
-                { icon: <FiHome />,       label: "Accommodation", value: pick.accommodation },
-                { icon: <FiCoffee />,     label: "Meals",         value: pick.meals },
-                { icon: <FiTruck />,      label: "Transportation",value: pick.transportation },
-                { icon: <FiUsers />,      label: "Tour Guide",    value: pick.tourGuide },
-                { icon: <FiCalendar />,   label: "Trip Duration", value: durationLabel },
+                { icon: <FiHome />, label: "Accommodation", value: pick.accommodation },
+                { icon: <FiCoffee />, label: "Meals", value: pick.meals },
+                { icon: <FiTruck />, label: "Transportation", value: pick.transportation },
+                { icon: <FiUsers />, label: "Tour Guide", value: pick.tourGuide },
+                { icon: <FiCalendar />, label: "Trip Duration", value: durationLabel },
               ].map((item) =>
                 item.value ? (
                   <div className="tpd-include-card" key={item.label}>
@@ -414,11 +508,9 @@ export default function TravelPickDetailsPage() {
             </div>
           )}
 
-          {/* TAB 2 — Dates & Policies */}
           {activeTab === 2 && (
             <div className="tpd-grid">
               <div className="tpd-col-main">
-
                 <div className="tpd-card">
                   <h2 className="tpd-card__title">Trip Dates</h2>
                   <div className="tpd-dates-timeline">
@@ -463,25 +555,30 @@ export default function TravelPickDetailsPage() {
                     )}
                   </div>
                 </div>
-
               </div>
 
               <div className="tpd-col-side">
                 {pick.cancellationPolicy && (
                   <div className="tpd-policy-card tpd-policy-card--red">
-                    <h3><FiAlertCircle /> Cancellation Policy</h3>
+                    <h3>
+                      <FiAlertCircle /> Cancellation Policy
+                    </h3>
                     <p>{pick.cancellationPolicy}</p>
                   </div>
                 )}
                 {pick.refundPolicy && (
                   <div className="tpd-policy-card tpd-policy-card--amber">
-                    <h3><FiShield /> Refund Policy</h3>
+                    <h3>
+                      <FiShield /> Refund Policy
+                    </h3>
                     <p>{pick.refundPolicy}</p>
                   </div>
                 )}
                 {pick.advancePolicy && (
                   <div className="tpd-policy-card tpd-policy-card--green">
-                    <h3><FiCheckCircle /> Advance Payment Policy</h3>
+                    <h3>
+                      <FiCheckCircle /> Advance Payment Policy
+                    </h3>
                     <p>{pick.advancePolicy}</p>
                   </div>
                 )}
@@ -489,15 +586,12 @@ export default function TravelPickDetailsPage() {
             </div>
           )}
 
-          {/* TAB 3 — Payment */}
           {activeTab === 3 && (
             <div className="tpd-grid">
               <div className="tpd-col-main">
-
                 <div className="tpd-card">
                   <h2 className="tpd-card__title">Payment Breakdown</h2>
 
-                  {/* Big visual breakdown */}
                   <div className="tpd-payment-breakdown">
                     <div className="tpd-payment-breakdown__bar">
                       <div
@@ -540,14 +634,24 @@ export default function TravelPickDetailsPage() {
                     <h2 className="tpd-card__title">Payment Info</h2>
                     {pick.paymentInfo && (
                       <div className="tpd-info-row">
-                        <span className="tpd-info-icon"><FiCreditCard /></span>
-                        <div><strong>Payment Information</strong><p>{pick.paymentInfo}</p></div>
+                        <span className="tpd-info-icon">
+                          <FiCreditCard />
+                        </span>
+                        <div>
+                          <strong>Payment Information</strong>
+                          <p>{pick.paymentInfo}</p>
+                        </div>
                       </div>
                     )}
                     {pick.moreDetails && (
                       <div className="tpd-info-row" style={{ marginTop: "12px" }}>
-                        <span className="tpd-info-icon"><FiFileText /></span>
-                        <div><strong>More Details</strong><p>{pick.moreDetails}</p></div>
+                        <span className="tpd-info-icon">
+                          <FiFileText />
+                        </span>
+                        <div>
+                          <strong>More Details</strong>
+                          <p>{pick.moreDetails}</p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -557,11 +661,18 @@ export default function TravelPickDetailsPage() {
               <div className="tpd-col-side">
                 <div className="tpd-cta-card">
                   <p className="tpd-cta-card__subtitle">Ready to book?</p>
-                  <strong className="tpd-cta-card__price">{formatCurrency(pick.price)}</strong>
-                  <p className="tpd-cta-card__note">Pay only {formatCurrency(pick.advanceAmount)} now to confirm your spot.</p>
+                  <strong className="tpd-cta-card__price">
+                    {formatCurrency(pick.price)}
+                  </strong>
+                  <p className="tpd-cta-card__note">
+                    Pay only {formatCurrency(pick.advanceAmount)} now to confirm
+                    your spot.
+                  </p>
                   <button
                     type="button"
-                    className={`tpd-book-btn ${!pick.isBookingOpen ? "tpd-book-btn--disabled" : ""}`}
+                    className={`tpd-book-btn ${
+                      !pick.isBookingOpen ? "tpd-book-btn--disabled" : ""
+                    }`}
                     disabled={!pick.isBookingOpen}
                     onClick={() => setPaymentModalOpen(true)}
                   >
@@ -569,14 +680,14 @@ export default function TravelPickDetailsPage() {
                   </button>
                   {pick.bookingCloseDate && (
                     <p className="tpd-cta-card__deadline">
-                      <FiAlertCircle /> Closes {formatShortDate(pick.bookingCloseDate)}
+                      <FiAlertCircle /> Closes{" "}
+                      {formatShortDate(pick.bookingCloseDate)}
                     </p>
                   )}
                 </div>
               </div>
             </div>
           )}
-
         </div>
       </div>
 
