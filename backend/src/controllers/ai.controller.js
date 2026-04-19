@@ -3,16 +3,46 @@ import { askGemini, safeJsonParse } from "../services/gemini.service.js";
 
 export const getPlacesByMood = async (req, res) => {
   try {
-    const { mood } = req.body;
+    const {
+      mood,
+      travelPreference,
+      travelDate,
+      placePreference,
+      userPlaces,
+    } = req.body;
 
     if (!mood || !String(mood).trim()) {
       return res.status(400).json({ message: "Mood is required" });
     }
 
+    const normalizedMood = String(mood).trim();
+    const normalizedTravelPreference = String(
+      travelPreference || ""
+    ).trim();
+    const normalizedTravelDate = String(travelDate || "").trim();
+    const normalizedPlacePreference = String(
+      placePreference || ""
+    ).trim();
+
+    const cleanedUserPlaces = Array.isArray(userPlaces)
+      ? userPlaces
+          .map((place) => String(place || "").trim())
+          .filter(Boolean)
+      : [];
+
     const prompt = `
 You are PackPalz, a travel planner for Sri Lanka.
 
-The user's current mood is: "${String(mood).trim()}"
+User details:
+- Current mood: "${normalizedMood}"
+- Travel preference: "${normalizedTravelPreference || "Not specified"}"
+- Travel timing: "${normalizedTravelDate || "Flexible"}"
+- Place preference: "${normalizedPlacePreference || "No specific preference"}"
+- User selected places: ${
+      cleanedUserPlaces.length > 0
+        ? cleanedUserPlaces.join(", ")
+        : "None"
+    }
 
 Return ONLY valid JSON in this exact format:
 {
@@ -21,7 +51,7 @@ Return ONLY valid JSON in this exact format:
     {
       "name": "Ella",
       "district": "Badulla",
-      "reason": "Matches the user's mood in a short sentence"
+      "reason": "Matches the user's mood and trip details in a short sentence"
     }
   ]
 }
@@ -29,7 +59,10 @@ Return ONLY valid JSON in this exact format:
 Rules:
 - Suggest at least 10 places
 - Places must be in Sri Lanka only
-- Do not mention any place outside Sri Lanka
+- If user selected places are valid Sri Lankan destinations, INCLUDE them in the result
+- If some selected places may be less ideal for the given season or travel timing, still keep the suggestions helpful and recommend better alternatives too
+- Consider weather and season when the user gives a month, date, weekend, or timing
+- Match places with the user's mood and travel preference
 - Keep reason short
 - No markdown
 - No explanation outside JSON
@@ -49,7 +82,7 @@ Rules:
     return res.status(200).json({
       message:
         parsed.message ||
-        "These are some places in Sri Lanka that match your mood. Please select one or more places.",
+        "Here are some places based on your preferences and travel timing. You can select more or remove any.",
       places: parsed.places,
     });
   } catch (error) {
@@ -64,17 +97,28 @@ Rules:
 
 export const getActivitiesByPlaces = async (req, res) => {
   try {
-    const { places } = req.body;
+    const { places, mood, travelPreference, travelDate } = req.body;
 
     if (!Array.isArray(places) || places.length === 0) {
       return res.status(400).json({ message: "Selected places are required" });
     }
 
+    const cleanedPlaces = places
+      .map((place) => String(place || "").trim())
+      .filter(Boolean);
+
     const prompt = `
 You are PackPalz, a Sri Lanka travel planner.
 
 The user selected these places:
-${JSON.stringify(places)}
+${JSON.stringify(cleanedPlaces)}
+
+User context:
+- Mood: "${String(mood || "").trim() || "Not specified"}"
+- Travel preference: "${
+      String(travelPreference || "").trim() || "Not specified"
+    }"
+- Travel timing: "${String(travelDate || "").trim() || "Flexible"}"
 
 Return ONLY valid JSON in this exact format:
 {
@@ -96,6 +140,8 @@ Return ONLY valid JSON in this exact format:
 Rules:
 - For EACH place, give at least 5 activities
 - All activities must suit that exact Sri Lankan destination
+- Consider weather and season if travel timing is given
+- Match activities to the user's mood and travel preference where relevant
 - No markdown
 - No extra text outside JSON
 `;
@@ -132,83 +178,123 @@ export const createItinerary = async (req, res) => {
   try {
     const {
       mood,
-      selectedPlaces,
-      selectedActivities,
+      travelPreference,
       days,
+      travelDate,
       specificDate,
       peopleCount,
-      travelCompanions,
-      customCompanionNote,
-      extraNotes,
+
+      needsCompanion,
+      companionCount,
+      companionType,
+      companionMatchBasis,
+
+      placePreference,
+      userPlaces,
+      selectedPlaces,
+      selectedActivities,
+      extraRequests,
     } = req.body;
 
-    if (
-      !mood ||
-      !Array.isArray(selectedPlaces) ||
-      selectedPlaces.length === 0 ||
-      !Array.isArray(selectedActivities) ||
-      selectedActivities.length === 0 ||
-      !days ||
-      !peopleCount
-    ) {
-      return res.status(400).json({
-        message: "Missing required itinerary fields",
-      });
+    if (!mood || !days) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
+
+    const cleanedUserPlaces = Array.isArray(userPlaces)
+      ? userPlaces.map((item) => String(item || "").trim()).filter(Boolean)
+      : [];
+
+    const cleanedSelectedPlaces = Array.isArray(selectedPlaces)
+      ? selectedPlaces.map((item) => String(item || "").trim()).filter(Boolean)
+      : [];
+
+    const cleanedSelectedActivities = Array.isArray(selectedActivities)
+      ? selectedActivities
+      : [];
+
+    const finalTravelTiming =
+      String(specificDate || "").trim() || String(travelDate || "").trim() || "Flexible";
 
     const prompt = `
-You are PackPalz, a smart Sri Lanka travel planner.
+You are PackPalz, a Sri Lanka travel planner.
 
-Create a friendly, practical itinerary based on these details:
+Create a detailed travel itinerary in Sri Lanka.
 
-Mood: ${mood}
-Places: ${JSON.stringify(selectedPlaces)}
-Activities: ${JSON.stringify(selectedActivities)}
-Days: ${days}
-Specific Date: ${specificDate || "Not specified"}
-People Count: ${peopleCount}
-Travel Companions: ${JSON.stringify(travelCompanions || [])}
-Custom Companion Preference: ${customCompanionNote || "None"}
-Extra User Notes: ${extraNotes || "None"}
+User details:
+- Mood: ${String(mood).trim()}
+- Travel Preference: ${String(travelPreference || "").trim() || "Not specified"}
+- Duration: ${days} days
+- Travel Timing: ${finalTravelTiming}
+- Number of People: ${peopleCount || "Not specified"}
 
-Return ONLY valid JSON in this exact format:
-{
-  "message": "short friendly reply",
-  "itineraryText": "full itinerary in plain text"
-}
-
-Rules:
-- Use only Sri Lanka places
-- Organize by day
-- Include morning, afternoon, evening when suitable
-- Match the mood
-- Consider travel group type and extra notes
-- Keep it user-friendly
-- No markdown
-- No extra text outside JSON
-`;
-
-    const result = await askGemini(prompt);
-    const parsed = safeJsonParse(result);
-
-    if (!parsed || !parsed.itineraryText) {
-      return res.status(500).json({
-        message: "AI returned invalid itinerary data",
-      });
+Companion Details:
+- Needs Companion: ${needsCompanion ? "Yes" : "No"}
+- Companion Count: ${companionCount || "Flexible"}
+- Companion Type: ${companionType || "No specific preference"}
+- Matching Preference: ${
+      companionMatchBasis || "No specific matching preference"
     }
 
+Place Preference: ${placePreference || "No specific preference"}
+
+User Entered Places:
+${cleanedUserPlaces.length > 0 ? cleanedUserPlaces.join(", ") : "None"}
+
+Selected Places:
+${cleanedSelectedPlaces.length > 0 ? cleanedSelectedPlaces.join(", ") : "None"}
+
+Selected Activities:
+${JSON.stringify(cleanedSelectedActivities)}
+
+Extra Requests:
+${extraRequests || "None"}
+
+IMPORTANT:
+- Suggest a realistic itinerary
+- Consider Sri Lankan weather and season
+- Balance travel distance
+- Include morning, afternoon, evening plans
+- Keep it practical and enjoyable
+- If the user asked for changes, reflect them clearly
+
+Return a clear DAY-BY-DAY itinerary as plain text only.
+`;
+
+    const text = await askGemini(prompt);
+
+    const itinerary = new Itinerary({
+      user: req.user?._id,
+      mood,
+      travelPreference,
+      days,
+      travelDate: travelDate || "",
+      specificDate: specificDate || "",
+      peopleCount,
+
+      needsCompanion: Boolean(needsCompanion),
+      companionCount: companionCount || "",
+      companionType: companionType || "",
+      companionMatchBasis: companionMatchBasis || "",
+
+      placePreference: placePreference || "",
+      userPlaces: cleanedUserPlaces,
+      selectedPlaces: cleanedSelectedPlaces,
+      selectedActivities: cleanedSelectedActivities,
+      extraRequests: extraRequests || "",
+
+      itineraryText: text,
+    });
+
+    await itinerary.save();
+
     return res.status(200).json({
-      message:
-        parsed.message ||
-        "Great! I created your itinerary. Please review it below.",
-      itineraryText: parsed.itineraryText,
+      message: "Great! I created your itinerary. Please review it below.",
+      itinerary: text,
+      itineraryText: text,
     });
-  } catch (error) {
-    console.error("createItinerary error:", error);
-    return res.status(500).json({
-      message: "Failed to create itinerary",
-      error: error.message,
-    });
+  } catch (err) {
+    console.error("Create itinerary error:", err);
+    return res.status(500).json({ message: "Failed to create itinerary" });
   }
 };
 
@@ -216,12 +302,20 @@ export const saveItinerary = async (req, res) => {
   try {
     const {
       mood,
+      travelPreference,
+      userPlaces,
       selectedPlaces,
       selectedActivities,
       days,
+      travelDate,
       specificDate,
       peopleCount,
+      needsCompanion,
+      companionCount,
+      companionType,
+      companionMatchBasis,
       travelCompanions,
+      placePreference,
       customCompanionNote,
       extraNotes,
       itineraryText,
@@ -230,7 +324,6 @@ export const saveItinerary = async (req, res) => {
     if (
       !mood ||
       !Array.isArray(selectedPlaces) ||
-      !Array.isArray(selectedActivities) ||
       !days ||
       !peopleCount ||
       !itineraryText
@@ -241,12 +334,22 @@ export const saveItinerary = async (req, res) => {
     const itinerary = await Itinerary.create({
       user: req.user?._id || null,
       mood,
+      travelPreference: travelPreference || "",
+      userPlaces: Array.isArray(userPlaces) ? userPlaces : [],
       selectedPlaces,
-      selectedActivities,
+      selectedActivities: Array.isArray(selectedActivities)
+        ? selectedActivities
+        : [],
       days,
+      travelDate: travelDate || "",
       specificDate: specificDate || "",
       peopleCount,
+      needsCompanion: Boolean(needsCompanion),
+      companionCount: companionCount || "",
+      companionType: companionType || "",
+      companionMatchBasis: companionMatchBasis || "",
       travelCompanions: Array.isArray(travelCompanions) ? travelCompanions : [],
+      placePreference: placePreference || "",
       customCompanionNote: customCompanionNote || "",
       extraNotes: extraNotes || "",
       itineraryText,
@@ -281,12 +384,20 @@ export const sendItineraryToAdmin = async (req, res) => {
       preferredTransport,
 
       mood,
+      travelPreference,
+      userPlaces,
       selectedPlaces,
       selectedActivities,
       days,
+      travelDate,
       specificDate,
       peopleCount,
+      needsCompanion,
+      companionCount,
+      companionType,
+      companionMatchBasis,
       travelCompanions,
+      placePreference,
       customCompanionNote,
       extraNotes,
       itineraryText,
@@ -301,7 +412,6 @@ export const sendItineraryToAdmin = async (req, res) => {
     if (
       !mood ||
       !Array.isArray(selectedPlaces) ||
-      !Array.isArray(selectedActivities) ||
       !days ||
       !peopleCount ||
       !itineraryText
@@ -327,12 +437,22 @@ export const sendItineraryToAdmin = async (req, res) => {
       preferredTransport: preferredTransport || "car",
 
       mood,
+      travelPreference: travelPreference || "",
+      userPlaces: Array.isArray(userPlaces) ? userPlaces : [],
       selectedPlaces,
-      selectedActivities,
+      selectedActivities: Array.isArray(selectedActivities)
+        ? selectedActivities
+        : [],
       days,
+      travelDate: travelDate || "",
       specificDate: specificDate || "",
       peopleCount,
+      needsCompanion: Boolean(needsCompanion),
+      companionCount: companionCount || "",
+      companionType: companionType || "",
+      companionMatchBasis: companionMatchBasis || "",
       travelCompanions: Array.isArray(travelCompanions) ? travelCompanions : [],
+      placePreference: placePreference || "",
       customCompanionNote: customCompanionNote || "",
       extraNotes: extraNotes || "",
       itineraryText,

@@ -39,6 +39,54 @@ const itinerarySchema = new mongoose.Schema(
       min: 0,
     },
 
+    travelPreference: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    travelDate: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    needsCompanion: {
+      type: Boolean,
+      default: false,
+    },
+
+    companionCount: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    companionType: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    companionMatchBasis: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    placePreference: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    userPlaces: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+
     accommodationType: {
       type: String,
       enum: ["", "hotel_or_rooms", "rented_house", "hostel_or_dorm", "camping"],
@@ -129,6 +177,12 @@ const itinerarySchema = new mongoose.Schema(
     },
 
     extraNotes: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    extraRequests: {
       type: String,
       default: "",
       trim: true,

@@ -120,6 +120,18 @@ const travelPickSchema = new mongoose.Schema(
       min: 0,
     },
 
+    sourceType: {
+      type: String,
+      enum: ["manual", "itinerary_request"],
+      default: "manual",
+    },
+
+    sourceBookingItineraryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "BookingItinerary",
+      default: null,
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -131,7 +143,6 @@ const travelPickSchema = new mongoose.Schema(
       default: true,
     },
 
-    // future-ready fields
     savedBy: [
       {
         type: mongoose.Schema.Types.ObjectId,

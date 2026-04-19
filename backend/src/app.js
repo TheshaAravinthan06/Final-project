@@ -79,4 +79,25 @@ app.use("/blogs", blogRoutes);
 app.use("/conversations", conversationRoutes);
 app.use("/ai", aiRoutes);
 app.use("/booking-itineraries", bookingItineraryRoutes);
+
+app.use((err, req, res, next) => {
+  console.error("Global backend error:", err);
+
+  if (err?.name === "MulterError") {
+    return res.status(400).json({
+      message: err.message || "File upload error",
+    });
+  }
+
+  if (err?.message) {
+    return res.status(500).json({
+      message: err.message,
+    });
+  }
+
+  return res.status(500).json({
+    message: "Something went wrong on the server",
+  });
+});
+
 export default app;

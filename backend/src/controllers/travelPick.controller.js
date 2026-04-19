@@ -64,6 +64,21 @@ const startOfToday = () => {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 };
 
+const buildSourceTypeFilter = (sourceType, includePublished = true) => {
+  const filter = includePublished ? { isPublished: true } : {};
+
+  if (sourceType === "manual") {
+    filter.$or = [
+      { sourceType: "manual" },
+      { sourceType: { $exists: false } },
+    ];
+  } else if (sourceType === "itinerary_request") {
+    filter.sourceType = "itinerary_request";
+  }
+
+  return filter;
+};
+
 const formatTravelPickResponse = (travelPick, userId = null) => {
   const obj = travelPick.toObject ? travelPick.toObject() : travelPick;
 
@@ -134,37 +149,39 @@ export const createTravelPick = async (req, res) => {
 
     const imageUrl = `/uploads/travel-picks/${req.file.filename}`;
 
-    const createdTravelPick = await TravelPick.create({
-      title,
-      place,
-      imageUrl,
-      startDate,
-      endDate,
-      caption,
-      placesToVisit: parseArrayField(placesToVisit),
-      accommodation: accommodation ? accommodation.trim() : "",
-      meals: meals ? meals.trim() : "",
-      transportation: transportation ? transportation.trim() : "",
-      tourGuide: tourGuide ? tourGuide.trim() : "",
-      paymentInfo: paymentInfo ? paymentInfo.trim() : "",
-      moreDetails: moreDetails ? moreDetails.trim() : "",
-      advancePolicy: advancePolicy
-        ? advancePolicy.trim()
-        : "30% advance payment is required to confirm the booking.",
-      advancePercentage:
-        advancePercentage !== undefined && advancePercentage !== ""
-          ? Number(advancePercentage)
-          : 30,
-      cancellationPolicy: cancellationPolicy
-        ? cancellationPolicy.trim()
-        : "No cancellation after confirmation due to travel arrangements.",
-      refundPolicy: refundPolicy
-        ? refundPolicy.trim()
-        : "Advance payment is non-refundable after confirmation.",
-      price: Number(price),
-      isPublished: toBoolean(isPublished, true),
-      createdBy: req.user._id,
-    });
+   const createdTravelPick = await TravelPick.create({
+  title,
+  place,
+  imageUrl,
+  startDate,
+  endDate,
+  caption,
+  placesToVisit: parseArrayField(placesToVisit),
+  accommodation: accommodation ? accommodation.trim() : "",
+  meals: meals ? meals.trim() : "",
+  transportation: transportation ? transportation.trim() : "",
+  tourGuide: tourGuide ? tourGuide.trim() : "",
+  paymentInfo: paymentInfo ? paymentInfo.trim() : "",
+  moreDetails: moreDetails ? moreDetails.trim() : "",
+  advancePolicy: advancePolicy
+    ? advancePolicy.trim()
+    : "30% advance payment is required to confirm the booking.",
+  advancePercentage:
+    advancePercentage !== undefined && advancePercentage !== ""
+      ? Number(advancePercentage)
+      : 30,
+  cancellationPolicy: cancellationPolicy
+    ? cancellationPolicy.trim()
+    : "No cancellation after confirmation due to travel arrangements.",
+  refundPolicy: refundPolicy
+    ? refundPolicy.trim()
+    : "Advance payment is non-refundable after confirmation.",
+  price: Number(price),
+  isPublished: toBoolean(isPublished, true),
+  sourceType: "manual",
+  sourceBookingItineraryId: null,
+  createdBy: req.user._id,
+});
 
     const users = await User.find({
       role: "user",
@@ -200,8 +217,11 @@ export const createTravelPick = async (req, res) => {
 export const getAllTravelPicks = async (req, res) => {
   try {
     const userId = getOptionalUserId(req);
+    const { sourceType = "all" } = req.query;
 
-    const travelPicks = await TravelPick.find({ isPublished: true })
+    const filter = buildSourceTypeFilter(sourceType, true);
+
+    const travelPicks = await TravelPick.find(filter)
       .populate("createdBy", "username")
       .sort({ createdAt: -1 });
 
@@ -246,7 +266,11 @@ export const getTravelPickById = async (req, res) => {
 // ADMIN - GET ALL TRAVEL PICKS
 export const adminGetAllTravelPicks = async (req, res) => {
   try {
-    const travelPicks = await TravelPick.find()
+    const { sourceType = "all" } = req.query;
+
+    const filter = buildSourceTypeFilter(sourceType, false);
+
+    const travelPicks = await TravelPick.find(filter)
       .populate("createdBy", "username email role")
       .sort({ createdAt: -1 });
 

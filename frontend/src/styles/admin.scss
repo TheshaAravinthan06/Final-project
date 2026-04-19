@@ -440,6 +440,36 @@ $graph-dark: #25473d;
   }
 }
 
+.admin-travel-picks-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0 18px;
+
+  button {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid $admin-border;
+    background: #fff;
+    color: $graph-dark;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  button:hover {
+    background: #f5f8f6;
+  }
+
+  button.is-active {
+    background: #173129;
+    border-color: #173129;
+    color: #fff;
+  }
+}
+
 .admin-stats-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -858,6 +888,19 @@ $graph-dark: #25473d;
     font-size: 12px;
     font-weight: 700;
   }
+
+  &__type-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #173129;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 2;
+}
 }
 
 .admin-post-modal-backdrop {
@@ -1603,6 +1646,13 @@ $graph-dark: #25473d;
 
   .admin-form-card--sticky {
     position: static;
+  }
+}
+
+
+@media (max-width: 768px) {
+  .admin-travel-picks-filter {
+    margin: 14px 0 16px;
   }
 }
 

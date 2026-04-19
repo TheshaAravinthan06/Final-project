@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import api from "@/lib/axios";
 import ShareToFollowingModal from "@/components/common/ShareToFollowingModal";
 import CommentsModal from "@/components/common/CommentsModal";
+import { useRouter } from "next/navigation";
 import ReportContentModal from "@/components/home/ReportContentModal";
 import {
   FiHeart,
@@ -92,6 +93,8 @@ const formatTimeAgo = (dateString?: string) => {
 };
 
 export default function FeedPostCard({ post }: Props) {
+  const router = useRouter();
+
   const [postState, setPostState] = useState<FeedPost>(post);
   const [liked, setLiked] = useState(Boolean(post.isLiked));
   const [saved, setSaved] = useState(Boolean(post.isSaved));
@@ -133,6 +136,17 @@ export default function FeedPostCard({ post }: Props) {
   const authorId = postState.createdBy?._id || "";
   const isOwnPost = !!currentUserId && currentUserId === authorId;
   const canShowFollow = !!authorId && !isOwnPost && !isFollowing;
+
+  const handleOpenAuthorProfile = () => {
+    if (!authorId) return;
+
+    if (currentUserId && currentUserId === authorId) {
+      router.push("/profile");
+      return;
+    }
+
+    router.push(`/user/${authorId}`);
+  };
 
   const captionLimit = 100;
   const fullCaption = postState.caption || "";
@@ -275,17 +289,17 @@ export default function FeedPostCard({ post }: Props) {
   };
 
   const handleBlock = async () => {
-  if (!authorId) return;
+    if (!authorId) return;
 
-  try {
-    await api.post(`/users/${authorId}/block`);
-    setShowMenu(false);
-    window.location.reload();
-  } catch (error) {
-    console.error("Block failed:", error);
-    showToast("Block failed");
-  }
-};
+    try {
+      await api.post(`/users/${authorId}/block`);
+      setShowMenu(false);
+      window.location.reload();
+    } catch (error) {
+      console.error("Block failed:", error);
+      showToast("Block failed");
+    }
+  };
 
   const handleCopyLink = async () => {
     try {
@@ -306,8 +320,17 @@ export default function FeedPostCard({ post }: Props) {
       setFollowLoading(true);
       await api.post(`/users/${authorId}/follow`);
       setIsFollowing(true);
-    } catch (error) {
-      console.error("Follow failed:", error);
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "";
+
+      if (message === "You already follow this user") {
+        setIsFollowing(true);
+      } else {
+        console.error(
+          "Follow failed:",
+          error?.response?.data || error.message || error
+        );
+      }
     } finally {
       setFollowLoading(false);
     }
@@ -322,21 +345,21 @@ export default function FeedPostCard({ post }: Props) {
       setIsFollowing(false);
       setShowUnfollowModal(false);
       setShowMenu(false);
-    } catch (error) {
-      console.error("Unfollow failed:", error);
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "";
+
+      if (message === "You do not follow this user") {
+        setIsFollowing(false);
+        setShowUnfollowModal(false);
+        setShowMenu(false);
+      } else {
+        console.error(
+          "Unfollow failed:",
+          error?.response?.data || error.message || error
+        );
+      }
     } finally {
       setFollowLoading(false);
-    }
-  };
-
-  const handleReport = async () => {
-    try {
-      await api.post(`/user-posts/${postState._id}/report`);
-      showToast("Reported");
-    } catch (error) {
-      console.error("Report failed:", error);
-    } finally {
-      setShowMenu(false);
     }
   };
 
@@ -360,9 +383,19 @@ export default function FeedPostCard({ post }: Props) {
       <article className="feed-card">
         <div className="feed-card__header">
           <div className="feed-card__user">
-            <img src={avatarSrc} alt={username} />
+            <img
+              src={avatarSrc}
+              alt={username}
+              onClick={handleOpenAuthorProfile}
+              style={{ cursor: "pointer" }}
+            />
             <div>
-              <h4>{username}</h4>
+              <h4
+                onClick={handleOpenAuthorProfile}
+                style={{ cursor: "pointer" }}
+              >
+                {username}
+              </h4>
               <p>{timeText}</p>
             </div>
           </div>
@@ -416,13 +449,13 @@ export default function FeedPostCard({ post }: Props) {
                   </>
                 ) : (
                   <>
-                   <button
-  type="button"
-  onClick={() => {
-    setShowMenu(false);
-    setShowReportModal(true);
-  }}
->
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMenu(false);
+                        setShowReportModal(true);
+                      }}
+                    >
                       <FiAlertTriangle />
                       Report
                     </button>
@@ -440,11 +473,10 @@ export default function FeedPostCard({ post }: Props) {
                       </button>
                     )}
 
-
-  <button type="button" onClick={handleBlock}>
-    <FiUserMinus />
-    Block account
-  </button>
+                    <button type="button" onClick={handleBlock}>
+                      <FiUserMinus />
+                      Block account
+                    </button>
 
                     <button type="button" onClick={handleCopyLink}>
                       <FiCopy />
@@ -543,22 +575,25 @@ export default function FeedPostCard({ post }: Props) {
       {toast && <div className="save-toast">{toast}</div>}
 
       <ReportContentModal
-  open={showReportModal}
-  onClose={() => setShowReportModal(false)}
-  onSubmit={async ({ target, reason, details }) => {
-    try {
-      if (target === "account" || target === "activity") {
-        await api.post(`/users/${authorId}/report`, { reason, details });
-      } else {
-        await api.post(`/user-posts/${postState._id}/report`, { reason, details });
-      }
-      showToast("Report sent to admin");
-    } catch (error) {
-      showToast("Report failed");
-    }
-  }}
-  title="Report this post"
-/>
+        open={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        onSubmit={async ({ target, reason, details }) => {
+          try {
+            if (target === "account" || target === "activity") {
+              await api.post(`/users/${authorId}/report`, { reason, details });
+            } else {
+              await api.post(`/user-posts/${postState._id}/report`, {
+                reason,
+                details,
+              });
+            }
+            showToast("Report sent to admin");
+          } catch (error) {
+            showToast("Report failed");
+          }
+        }}
+        title="Report this post"
+      />
 
       <ShareToFollowingModal
         open={showShareModal}

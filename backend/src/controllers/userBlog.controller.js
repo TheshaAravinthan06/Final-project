@@ -57,6 +57,11 @@ const formatBlog = (blogDoc, userId = null) => {
           username: blog.author.username,
           name: blog.author.name || "",
           profileImage: blog.author.profileImage || "",
+          isFollowing: userId
+            ? (blog.author.followers || []).some(
+                (id) => String(id) === String(userId)
+              )
+            : false,
         }
       : null,
     comments: (blog.comments || []).map((comment) => ({
@@ -88,7 +93,7 @@ export const createBlog = async (req, res) => {
     });
 
     const populatedBlog = await UserBlog.findById(newBlog._id)
-      .populate("author", "username name profileImage")
+      .populate("author", "username name profileImage followers")
       .populate("comments.user", "username name profileImage");
 
     res.status(201).json({
@@ -111,7 +116,7 @@ export const getAllBlogs = async (req, res) => {
     }
 
     const blogs = await UserBlog.find({ isPublished: { $ne: false } })
-      .populate("author", "username name profileImage")
+      .populate("author", "username name profileImage followers")
       .populate("comments.user", "username name profileImage")
       .sort({ createdAt: -1 });
 
@@ -133,7 +138,7 @@ export const getBlogById = async (req, res) => {
     const viewerId = getOptionalUserId(req);
 
     const blog = await UserBlog.findById(req.params.id)
-      .populate("author", "username name profileImage")
+      .populate("author", "username name profileImage followers")
       .populate("comments.user", "username name profileImage");
 
     if (!blog) {
@@ -164,7 +169,7 @@ export const getBlogsByUserId = async (req, res) => {
         : { author: userId, isPublished: { $ne: false } };
 
     const blogs = await UserBlog.find(query)
-      .populate("author", "username name profileImage")
+      .populate("author", "username name profileImage followers")
       .populate("comments.user", "username name profileImage")
       .sort({ createdAt: -1 });
 
@@ -201,7 +206,7 @@ export const updateBlog = async (req, res) => {
     await blog.save();
 
     const updatedBlog = await UserBlog.findById(blog._id)
-      .populate("author", "username name profileImage")
+      .populate("author", "username name profileImage followers")
       .populate("comments.user", "username name profileImage");
 
     res.status(200).json({
@@ -229,7 +234,7 @@ export const toggleBlogVisibility = async (req, res) => {
     await blog.save();
 
     const updatedBlog = await UserBlog.findById(blog._id)
-      .populate("author", "username name profileImage")
+      .populate("author", "username name profileImage followers")
       .populate("comments.user", "username name profileImage");
 
     res.status(200).json({
@@ -292,7 +297,7 @@ export const likeBlog = async (req, res) => {
     }
 
     const blog = await UserBlog.findById(id)
-      .populate("author", "username name profileImage")
+      .populate("author", "username name profileImage followers")
       .populate("comments.user", "username name profileImage");
 
     if (!blog || blog.isPublished === false) {
@@ -328,7 +333,7 @@ export const unlikeBlog = async (req, res) => {
     }
 
     const blog = await UserBlog.findById(id)
-      .populate("author", "username name profileImage")
+      .populate("author", "username name profileImage followers")
       .populate("comments.user", "username name profileImage");
 
     if (!blog || blog.isPublished === false) {
@@ -359,7 +364,7 @@ export const saveBlog = async (req, res) => {
     }
 
     const blog = await UserBlog.findById(id)
-      .populate("author", "username name profileImage")
+      .populate("author", "username name profileImage followers")
       .populate("comments.user", "username name profileImage");
 
     if (!blog || blog.isPublished === false) {
@@ -395,7 +400,7 @@ export const unsaveBlog = async (req, res) => {
     }
 
     const blog = await UserBlog.findById(id)
-      .populate("author", "username name profileImage")
+      .populate("author", "username name profileImage followers")
       .populate("comments.user", "username name profileImage");
 
     if (!blog) {
@@ -444,7 +449,7 @@ export const addCommentToBlog = async (req, res) => {
     await blog.save();
 
     const updatedBlog = await UserBlog.findById(id)
-      .populate("author", "username name profileImage")
+      .populate("author", "username name profileImage followers")
       .populate("comments.user", "username name profileImage");
 
     return res.status(201).json({
@@ -484,7 +489,7 @@ export const deleteCommentFromBlog = async (req, res) => {
     await blog.save();
 
     const updatedBlog = await UserBlog.findById(blogId)
-      .populate("author", "username name profileImage")
+      .populate("author", "username name profileImage followers")
       .populate("comments.user", "username name profileImage");
 
     return res.status(200).json({

@@ -313,21 +313,25 @@ export const unfollowUser = async (req, res) => {
       return res.status(404).json({ message: "Current user not found" });
     }
 
-    const isFollowing = currentUser.following.some(
-      (userId) => String(userId) === String(id)
-    );
+  const isFollowingFromCurrentUser = currentUser.following.some(
+  (userId) => String(userId) === String(id)
+);
 
-    if (!isFollowing) {
-      return res.status(400).json({ message: "You do not follow this user" });
-    }
+const isFollowerOnTargetUser = userToUnfollow.followers.some(
+  (userId) => String(userId) === String(currentUserId)
+);
 
-    currentUser.following = currentUser.following.filter(
-      (userId) => String(userId) !== String(id)
-    );
+if (!isFollowingFromCurrentUser && !isFollowerOnTargetUser) {
+  return res.status(400).json({ message: "You do not follow this user" });
+}
 
-    userToUnfollow.followers = userToUnfollow.followers.filter(
-      (userId) => String(userId) !== String(currentUserId)
-    );
+currentUser.following = currentUser.following.filter(
+  (userId) => String(userId) !== String(id)
+);
+
+userToUnfollow.followers = userToUnfollow.followers.filter(
+  (userId) => String(userId) !== String(currentUserId)
+);
 
     await currentUser.save();
     await userToUnfollow.save();

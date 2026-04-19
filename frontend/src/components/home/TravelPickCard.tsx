@@ -16,6 +16,7 @@ type TravelPick = {
   isBookingOpen?: boolean;
   createdAt?: string;
   isSaved?: boolean;
+  sourceType?: "manual" | "itinerary_request";
 };
 
 type Props = {
@@ -114,6 +115,12 @@ export default function TravelPickCard({ pick, onBookNow }: Props) {
 
       <div className="travel-pick-card__image-wrap">
         <img src={getImageSrc(pick.imageUrl)} alt={pick.title} />
+
+        <span className="travel-pick-card__badge">
+          {pick.sourceType === "itinerary_request"
+            ? "From User Request"
+            : "Admin Package"}
+        </span>
       </div>
 
       <div className="travel-pick-card__body">

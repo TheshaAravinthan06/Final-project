@@ -122,18 +122,29 @@ export default function BlogPreview({ blog }: BlogPreviewProps) {
       (blog.content?.length || 0) > 160 ? "..." : ""
     }`;
 
-    const captionLimit = 90;
+  const captionLimit = 90;
 
-const shortCaption =
-  previewText.length > captionLimit
-    ? `${previewText.slice(0, captionLimit).trim()}...`
-    : previewText;
+  const shortCaption =
+    previewText.length > captionLimit
+      ? `${previewText.slice(0, captionLimit).trim()}...`
+      : previewText;
 
-const hasLongCaption = previewText.length > captionLimit;
+  const hasLongCaption = previewText.length > captionLimit;
 
   const authorId = blog.author?._id || "";
   const isOwnBlog = !!currentUserId && currentUserId === authorId;
   const canShowFollow = !!authorId && !isOwnBlog && !isFollowing;
+
+  const handleOpenAuthorProfile = () => {
+    if (!authorId) return;
+
+    if (currentUserId && currentUserId === authorId) {
+      router.push("/profile");
+      return;
+    }
+
+    router.push(`/user/${authorId}`);
+  };
 
   useEffect(() => {
     const loadCurrentUser = async () => {
@@ -252,8 +263,17 @@ const hasLongCaption = previewText.length > captionLimit;
       setFollowLoading(true);
       await api.post(`/users/${authorId}/follow`);
       setIsFollowing(true);
-    } catch (error) {
-      console.error("Follow failed:", error);
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "";
+
+      if (message === "You already follow this user") {
+        setIsFollowing(true);
+      } else {
+        console.error(
+          "Follow failed:",
+          error?.response?.data || error.message || error
+        );
+      }
     } finally {
       setFollowLoading(false);
     }
@@ -268,8 +288,19 @@ const hasLongCaption = previewText.length > captionLimit;
       setIsFollowing(false);
       setShowUnfollowModal(false);
       setShowMenu(false);
-    } catch (error) {
-      console.error("Unfollow failed:", error);
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "";
+
+      if (message === "You do not follow this user") {
+        setIsFollowing(false);
+        setShowUnfollowModal(false);
+        setShowMenu(false);
+      } else {
+        console.error(
+          "Unfollow failed:",
+          error?.response?.data || error.message || error
+        );
+      }
     } finally {
       setFollowLoading(false);
     }
@@ -288,7 +319,10 @@ const hasLongCaption = previewText.length > captionLimit;
       if (target === "account" || target === "activity") {
         await api.post(`/users/${authorId}/report`, {
           reason,
-          details: target === "activity" ? `Activity report: ${details}`.trim() : details,
+          details:
+            target === "activity"
+              ? `Activity report: ${details}`.trim()
+              : details,
         });
       } else {
         await api.post(`/blogs/${blog._id}/report`, { reason, details });
@@ -336,9 +370,19 @@ const hasLongCaption = previewText.length > captionLimit;
       <article className="blog-feed-card">
         <div className="blog-feed-card__header">
           <div className="blog-feed-card__user">
-            <img src={avatarSrc} alt={username} />
+            <img
+              src={avatarSrc}
+              alt={username}
+              onClick={handleOpenAuthorProfile}
+              style={{ cursor: "pointer" }}
+            />
             <div>
-              <h4>{username}</h4>
+              <h4
+                onClick={handleOpenAuthorProfile}
+                style={{ cursor: "pointer" }}
+              >
+                {username}
+              </h4>
               <p>{timeText}</p>
             </div>
           </div>
@@ -393,12 +437,12 @@ const hasLongCaption = previewText.length > captionLimit;
                 ) : (
                   <>
                     <button
-  type="button"
-  onClick={() => {
-    setShowMenu(false);
-    setShowReportModal(true);
-  }}
->
+                      type="button"
+                      onClick={() => {
+                        setShowMenu(false);
+                        setShowReportModal(true);
+                      }}
+                    >
                       <FiAlertTriangle />
                       Report
                     </button>
@@ -478,13 +522,13 @@ const hasLongCaption = previewText.length > captionLimit;
           </div>
 
           <div className="feed-action-stat">
-          <button
-  type="button"
-  className="icon-btn"
-  onClick={() => router.push(`/blogs/${blog._id}#comments`)}
->
-  <FiMessageCircle />
-</button>
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={() => router.push(`/blogs/${blog._id}#comments`)}
+            >
+              <FiMessageCircle />
+            </button>
             <span className="feed-action-stat__count">{commentsCount}</span>
           </div>
 
@@ -507,20 +551,26 @@ const hasLongCaption = previewText.length > captionLimit;
         </div>
 
         <div className="blog-feed-card__footer">
-         <p className="blog-feed-card__caption">
-  <span className="blog-feed-card__caption-username">{username}</span>{" "}
-  {expandedCaption ? previewText : shortCaption}
+          <p className="blog-feed-card__caption">
+            <span
+              className="blog-feed-card__caption-username"
+              onClick={handleOpenAuthorProfile}
+              style={{ cursor: "pointer" }}
+            >
+              {username}
+            </span>{" "}
+            {expandedCaption ? previewText : shortCaption}
 
-  {!expandedCaption && hasLongCaption && (
-    <button
-      type="button"
-      className="blog-feed-card__more-btn"
-      onClick={() => setExpandedCaption(true)}
-    >
-      more...
-    </button>
-  )}
-</p>
+            {!expandedCaption && hasLongCaption && (
+              <button
+                type="button"
+                className="blog-feed-card__more-btn"
+                onClick={() => setExpandedCaption(true)}
+              >
+                more...
+              </button>
+            )}
+          </p>
 
           <div className="comment-box blog-feed-card__comment-box">
             <input

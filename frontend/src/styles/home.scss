@@ -4000,6 +4000,37 @@
   font-size: 15px;
 }
 
+.travel-picks-filter {
+  max-width: 1200px;
+  margin: 0 auto 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  button {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid #d9e5de;
+    background: #ffffff;
+    color: #355348;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  button:hover {
+    background: #f3f8f5;
+  }
+
+  button.is-active {
+    background: #143f2d;
+    border-color: #143f2d;
+    color: #ffffff;
+  }
+}
+
 .travel-picks-grid {
   max-width: 1200px;
   margin: 0 auto;
@@ -4031,6 +4062,23 @@
     display: block;
     transition: transform 0.35s ease;
   }
+}
+
+.travel-pick-card__badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #173129;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 6px 16px rgba(16, 30, 24, 0.12);
 }
 
 .travel-pick-card:hover .travel-pick-card__image-wrap img {
@@ -4141,6 +4189,20 @@
   font-size: 11px;
   line-height: 1.35;
   text-align: right;
+}
+
+
+@media (max-width: 768px) {
+  .travel-picks-filter {
+    margin-bottom: 16px;
+    gap: 8px;
+
+    button {
+      min-height: 38px;
+      padding: 0 14px;
+      font-size: 12px;
+    }
+  }
 }
 
 @media (max-width: 1180px) {

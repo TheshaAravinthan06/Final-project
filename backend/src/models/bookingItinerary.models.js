@@ -151,10 +151,61 @@ const bookingItinerarySchema = new mongoose.Schema(
       default: "pending",
     },
 
+    travelPreference: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    needsCompanion: {
+      type: Boolean,
+      default: false,
+    },
+
+    companionCount: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    companionType: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    companionMatchBasis: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    placePreference: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
     adminNote: {
       type: String,
       default: "",
       trim: true,
+    },
+
+    addedToPackage: {
+      type: Boolean,
+      default: false,
+    },
+
+    travelPickId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "TravelPick",
+      default: null,
+    },
+
+    packageCreatedAt: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true }

@@ -17,6 +17,7 @@ type TravelPick = {
   savesCount?: number;
   isPublished: boolean;
   createdAt: string;
+  sourceType?: "manual" | "itinerary_request";
 };
 
 const BACKEND_URL =
@@ -34,11 +35,19 @@ export default function AdminTravelPicksPage() {
   const [travelPicks, setTravelPicks] = useState<TravelPick[]>([]);
   const [selectedPickId, setSelectedPickId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sourceFilter, setSourceFilter] = useState<
+    "all" | "manual" | "itinerary_request"
+  >("all");
 
   useEffect(() => {
     const fetchTravelPicks = async () => {
       try {
-        const res = await api.get("/travel-picks/admin/all");
+        setLoading(true);
+
+        const query =
+          sourceFilter === "all" ? "" : `?sourceType=${sourceFilter}`;
+
+        const res = await api.get(`/travel-picks/admin/all${query}`);
         setTravelPicks(res.data?.travelPicks || []);
       } catch (error) {
         console.error("Failed to load admin travel picks:", error);
@@ -49,7 +58,7 @@ export default function AdminTravelPicksPage() {
     };
 
     fetchTravelPicks();
-  }, []);
+  }, [sourceFilter]);
 
   const selectedIndex = useMemo(
     () => travelPicks.findIndex((item) => item._id === selectedPickId),
@@ -115,6 +124,32 @@ export default function AdminTravelPicksPage() {
         </button>
       </div>
 
+      <div className="admin-travel-picks-filter">
+        <button
+          type="button"
+          className={sourceFilter === "all" ? "is-active" : ""}
+          onClick={() => setSourceFilter("all")}
+        >
+          All
+        </button>
+
+        <button
+          type="button"
+          className={sourceFilter === "manual" ? "is-active" : ""}
+          onClick={() => setSourceFilter("manual")}
+        >
+          Manual
+        </button>
+
+        <button
+          type="button"
+          className={sourceFilter === "itinerary_request" ? "is-active" : ""}
+          onClick={() => setSourceFilter("itinerary_request")}
+        >
+          User Itinerary Packages
+        </button>
+      </div>
+
       <div className="admin-place-grid">
         {travelPicks.map((pick) => (
           <button
@@ -137,6 +172,12 @@ export default function AdminTravelPicksPage() {
                 </span>
               </div>
             </div>
+
+            <span className="admin-place-grid__type-badge">
+              {pick.sourceType === "itinerary_request"
+                ? "User Request"
+                : "Manual"}
+            </span>
 
             {!pick.isPublished && (
               <span className="admin-place-grid__hidden-badge">Hidden</span>
